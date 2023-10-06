@@ -1,0 +1,10 @@
+[submodule "upcxx-utils"]
+	path = upcxx-utils
+	url = https://bitbucket.org/berkeleylab/upcxx-utils.git
+	branch = mhmxx
+[submodule "zstr"]
+	path = zstr
+	url = https://github.com/JGI-Bioinformatics/zstr.git
+[submodule "test/googletest"]
+	path = test/googletest
+	url = https://github.com/google/googletest/

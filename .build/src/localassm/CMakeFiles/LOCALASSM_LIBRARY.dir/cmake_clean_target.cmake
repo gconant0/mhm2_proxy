@@ -1,0 +1,3 @@
+file(REMOVE_RECURSE
+  "libLOCALASSM_LIBRARY.a"
+)

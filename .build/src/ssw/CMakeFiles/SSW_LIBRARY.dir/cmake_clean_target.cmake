@@ -1,0 +1,3 @@
+file(REMOVE_RECURSE
+  "libSSW_LIBRARY.a"
+)
