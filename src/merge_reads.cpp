@@ -66,7 +66,7 @@ using namespace upcxx;
 #include "utils.hpp"
 #include "zstr.hpp"
 #include "kmer.hpp"
-#include "ssw.hpp"
+
 
 using namespace upcxx_utils;
 
@@ -233,10 +233,6 @@ void merge_reads(vector<string> reads_fname_list, int qual_offset, double &elaps
   Timer merge_time(__FILEFUNC__ + " merging all");
 
   adapter_hash_table_t adapters;
-  StripedSmithWaterman::Aligner ssw_aligner(ALN_MATCH_SCORE, ALN_MISMATCH_COST, ALN_GAP_OPENING_COST, ALN_GAP_EXTENDING_COST,
-                                            ALN_AMBIGUITY_COST);
-  StripedSmithWaterman::Filter ssw_filter;
-  ssw_filter.report_cigar = false;
   
   FastqReaders::open_all(reads_fname_list);
   vector<string> merged_reads_fname_list;
