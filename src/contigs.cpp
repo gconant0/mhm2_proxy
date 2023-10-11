@@ -176,13 +176,7 @@ void Contigs::dump_contigs(const string &fname, unsigned min_ctg_len) {
     of << ctg->seq << "\n";
   }
   of.close();  // sync and output stats
-#ifdef DEBUG
-  // two important things here.
-  // 1: touch and test the load_contigs code when debugging
-  // 2: ensure restarts keep identical contigs in the ranks when debugging after load_contigs balances the input
-  SLOG_VERBOSE("Reloading contigs from file to rebalance\n");
-  load_contigs(fname);
-#endif
+
 }
 
 void Contigs::load_contigs(const string &ctgs_fname) {
