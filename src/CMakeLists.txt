@@ -200,7 +200,6 @@ endforeach()
 foreach(
   tgt
   fastq
-  alignments
   contigs
   packed_reads
   utils
