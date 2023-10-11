@@ -376,10 +376,7 @@ bool Options::load(int argc, char **argv) {
   app.add_flag("--restart", restart,
                "Restart in previous directory where a run failed (must specify the previous directory with -o).")
       ->capture_default_str();
-  app.add_flag("--klign-kmer-cache", klign_kmer_cache,
-               "Include a cache of kmer seed to contigs which helps avoid repeat lookups of the same kmer -- most useful after "
-               "shuffle-reads localization")
-      ->capture_default_str();
+  
   app.add_flag("--post-asm-align", post_assm_aln, "Align reads to final assembly")->capture_default_str();
   app.add_flag("--post-asm-abd", post_assm_abundances, "Compute and output abundances for final assembly (used by MetaBAT).")
       ->capture_default_str();
