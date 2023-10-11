@@ -87,8 +87,8 @@ bool Options::extract_previous_lens(vector<unsigned> &lens, unsigned k) {
 
 
 
-double Options::setup_output_dir() {
-  auto t_start = chrono::high_resolution_clock::now();
+void Options::setup_output_dir() {
+ 
   if (output_dir.empty()) DIE("Invalid empty ouput_dir");
   if (!upcxx::rank_me()) {
     // create the output directory (and possibly stripe it)
@@ -197,12 +197,11 @@ double Options::setup_output_dir() {
   }
   upcxx::barrier();
 
-  chrono::duration<double> t_elapsed = chrono::high_resolution_clock::now() - t_start;
-  return t_elapsed.count();
+ 
 }
 
-double Options::setup_log_file() {
-  auto t_start = chrono::high_resolution_clock::now();
+void Options::setup_log_file() {
+  
   if (!upcxx::rank_me()) {
     // check to see if mhm2.log exists. If so, and not restarting, rename it
     if (file_exists("mhm2.log") ) {
@@ -215,8 +214,6 @@ double Options::setup_log_file() {
     }
   }
   upcxx::barrier();
-  chrono::duration<double> t_elapsed = chrono::high_resolution_clock::now() - t_start;
-  return t_elapsed.count();
 }
 
 string Options::get_job_id() {
@@ -385,9 +382,9 @@ bool Options::load(int argc, char **argv) {
     output_dir_opt->default_val(output_dir);
   }
 
-  double setup_time = 0;
-  setup_time += setup_output_dir();
-  setup_time += setup_log_file();
+ 
+  setup_output_dir();
+  setup_log_file();
 
   // make sure we only use defaults for kmer lens if none of them were set by the user
   if (!*kmer_lens_opt && !*scaff_kmer_lens_opt) {
@@ -437,9 +434,7 @@ bool Options::load(int argc, char **argv) {
   }
 
   barrier();
-  chrono::duration<double> logger_t_elapsed = chrono::high_resolution_clock::now() - logger_t;
-  SLOG_VERBOSE("init_logger took ", setprecision(2), fixed, logger_t_elapsed.count(), " s at ", get_current_time(), " (",
-               setup_time, " s for io)\n");
+  
 
 #ifdef DEBUG
   open_dbg("debug");

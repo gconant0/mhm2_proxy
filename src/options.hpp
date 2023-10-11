@@ -71,9 +71,9 @@ class Options {
 
   void get_restart_options();
 
-  double setup_output_dir();
+  void setup_output_dir();
 
-  double setup_log_file();
+  void setup_log_file();
 
   bool find_restart(string stage_type, int k);
 
