@@ -183,8 +183,6 @@ include_directories("ssw")
 add_subdirectory(ssw)
 include_directories("kcount")
 add_subdirectory(kcount)
-include_directories("klign")
-add_subdirectory(klign)
 include_directories("cgraph")
 add_subdirectory(cgraph)
 
@@ -250,7 +248,6 @@ set(MHM2_LINK_LIBRARIES
     Threads::Threads
     SSW_LIBRARY
     KCOUNT_LIBRARY
-    KLIGN_LIBRARY
     CGRAPH_LIBRARY
     ${ZLIB_LIBRARIES}
     MHM2_VERSION_LIB)
