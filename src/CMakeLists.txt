@@ -179,12 +179,8 @@ endforeach()
 
 add_definitions(-DALL_DEFNS=\"${all_defs}\")
 
-include_directories("ssw")
-add_subdirectory(ssw)
 include_directories("kcount")
 add_subdirectory(kcount)
-include_directories("cgraph")
-add_subdirectory(cgraph)
 
 set(MHM2_TARGET_OBJECTS)
 add_library(hash_funcs OBJECT hash_funcs.c)
@@ -246,9 +242,7 @@ add_executable(mhm2 main.cpp ${MHM2_TARGET_OBJECTS})
 
 set(MHM2_LINK_LIBRARIES
     Threads::Threads
-    SSW_LIBRARY
     KCOUNT_LIBRARY
-    CGRAPH_LIBRARY
     ${ZLIB_LIBRARIES}
     MHM2_VERSION_LIB)
 
