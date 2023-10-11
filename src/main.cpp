@@ -170,7 +170,7 @@ int main(int argc, char **argv) {
   Contigs ctgs;
   int max_kmer_len = 0;
   int max_expected_ins_size = 0;
-  if (!options->post_assm_only) {
+
     MemoryTrackerThread memory_tracker;  // write only to mhm2.log file(s), not a separate one too
     memory_tracker.start();
     SLOG(KBLUE, "Starting with ", get_size_str(get_free_mem()), " free on node 0", KNORM, "\n");
@@ -226,29 +226,29 @@ int main(int argc, char **argv) {
         auto max_k = (kmer_len / 32 + 1) * 32;
         LOG(upcxx_utils::GasNetVars::getUsedShmMsg(), "\n");
 
-#define CONTIG_K(KMER_LEN)                                                                                                         \
-  case KMER_LEN:                                                                                                                   \
+    #define CONTIG_K(KMER_LEN)                                                                                                         \
+    case KMER_LEN:                                                                                                                   \
     contigging<KMER_LEN>(kmer_len, prev_kmer_len, rlen_limit, packed_reads_list, ctgs, max_expected_ins_size, ins_avg, ins_stddev, \
                          options);                                                                                                 \
     break
 
         switch (max_k) {
           CONTIG_K(32);
-#if MAX_BUILD_KMER >= 64
+    #if MAX_BUILD_KMER >= 64
           CONTIG_K(64);
-#endif
-#if MAX_BUILD_KMER >= 96
+    #endif
+    #if MAX_BUILD_KMER >= 96
           CONTIG_K(96);
-#endif
-#if MAX_BUILD_KMER >= 128
+    #endif
+    #if MAX_BUILD_KMER >= 128
           CONTIG_K(128);
-#endif
-#if MAX_BUILD_KMER >= 160
+    #endif
+    #if MAX_BUILD_KMER >= 160
           CONTIG_K(160);
-#endif
+    #endif
           default: DIE("Built for max k = ", MAX_BUILD_KMER, " not k = ", max_k);
         }
-#undef CONTIG_K
+    #undef CONTIG_K
 
         prev_kmer_len = kmer_len;
       }
@@ -297,7 +297,7 @@ int main(int argc, char **argv) {
     memory_tracker.stop();
     std::chrono::duration<double> t_elapsed = std::chrono::high_resolution_clock::now() - start_t;
     SLOG("Finished in ", setprecision(2), fixed, t_elapsed.count(), " s at ", get_current_time(), " for ", MHM2_VERSION, "\n");
-  }
+
   FastqReaders::close_all();
 
 
