@@ -62,8 +62,6 @@ template <int MAX_K>
 void traverse_debruijn_graph(unsigned kmer_len, dist_object<KmerDHT<MAX_K>> &kmer_dht, Contigs &my_uutigs);
 void localassm(int max_kmer_len, int kmer_len, vector<PackedReads *> &packed_reads_list, int insert_avg, int insert_stddev,
                int qual_offset, Contigs &ctgs, const Alns &alns);
-// void shuffle_reads(int qual_offset, vector<PackedReads *> &packed_reads_list, Alns &alns, Contigs &ctgs);
-void shuffle_reads(int qual_offset, vector<PackedReads *> &packed_reads_list, Contigs &ctgs);
 
 static uint64_t estimate_num_kmers(unsigned kmer_len, vector<PackedReads *> &packed_reads_list) {
   BarrierTimer timer(__FILEFUNC__);
@@ -146,19 +144,7 @@ void contigging(int kmer_len, int prev_kmer_len, int rlen_limit, vector<PackedRe
       auto max_num_reads = reduce_one(num_reads, op_fast_max, 0).wait();
       SLOG_VERBOSE("Avg reads per rank ", avg_num_reads, " max ", max_num_reads, " (balance ",
                    (double)avg_num_reads / max_num_reads, ")\n");
-      if (options->shuffle_reads) {
-        stage_timers.shuffle_reads->start();
-        shuffle_reads(options->qual_offset, packed_reads_list, ctgs);
-        stage_timers.shuffle_reads->stop();
-        num_reads = 0;
-        for (auto packed_reads : packed_reads_list) {
-          num_reads += packed_reads->get_local_num_reads();
-        }
-        avg_num_reads = reduce_one(num_reads, op_fast_add, 0).wait() / rank_n();
-        max_num_reads = reduce_one(num_reads, op_fast_max, 0).wait();
-        SLOG_VERBOSE("After shuffle: avg reads per rank ", avg_num_reads, " max ", max_num_reads, " (load balance ",
-                     (double)avg_num_reads / max_num_reads, ")\n");
-      }
+     
     }
     barrier();
       
