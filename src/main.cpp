@@ -171,25 +171,15 @@ int main(int argc, char **argv) {
       packed_reads_list.push_back(new PackedReads(options->qual_offset, get_merged_reads_fname(reads_fname)));
     }
     double elapsed_write_io_t = 0;
-    if ((!options->restart || !options->checkpoint_merged) && !options->kmer_lens.empty()) {
-      // merge the reads and insert into the packed reads memory cache
+    
+    // merge the reads and insert into the packed reads memory cache
       
-      stage_timers.merge_reads->start();
-      merge_reads(options->reads_fnames, options->qual_offset, elapsed_write_io_t, packed_reads_list, options->checkpoint_merged,
+    stage_timers.merge_reads->start();
+    merge_reads(options->reads_fnames, options->qual_offset, elapsed_write_io_t, packed_reads_list, options->checkpoint_merged,
                   options->kmer_lens[0]);
-      stage_timers.merge_reads->stop();
+    stage_timers.merge_reads->stop();
       
-    } else {
-      // since this is a restart with checkpoint_merged true, the merged reads should be on disk already
-      // load the merged reads instead of merge the original ones again
-      stage_timers.cache_reads->start();
-      double free_mem = (!rank_me() ? get_free_mem() : 0);
-      upcxx::barrier();
-      PackedReads::load_reads(packed_reads_list);
-      stage_timers.cache_reads->stop();
-      SLOG_VERBOSE(KBLUE, "Cache used ", setprecision(2), fixed, get_size_str(free_mem - get_free_mem()), " memory on node 0",
-                   KNORM, "\n");
-    }
+    
     unsigned rlen_limit = 0;
     for (auto packed_reads : packed_reads_list) {
       rlen_limit = max(rlen_limit, packed_reads->get_max_read_len());
@@ -266,10 +256,9 @@ int main(int argc, char **argv) {
 
     SLOG(KBLUE "_________________________", KNORM, "\n");
     SLOG("Stage timing:\n");
-    if (!options->restart)
-      SLOG("    ", stage_timers.merge_reads->get_final(), "\n");
-    else
-      SLOG("    ", stage_timers.cache_reads->get_final(), "\n");
+    
+    SLOG("    ", stage_timers.merge_reads->get_final(), "\n");
+    
     SLOG("    ", stage_timers.analyze_kmers->get_final(), "\n");
     SLOG("      -> ", stage_timers.kernel_kmer_analysis->get_final(), "\n");
     SLOG("    ", stage_timers.dbjg_traversal->get_final(), "\n");

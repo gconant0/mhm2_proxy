@@ -83,77 +83,9 @@ bool Options::extract_previous_lens(vector<unsigned> &lens, unsigned k) {
   return false;
 }
 
-bool Options::find_restart(string stage_type, int k) {
-  string new_ctgs_fname(stage_type + "-" + to_string(k) + ".fasta");
-  if (!file_exists(new_ctgs_fname)) {
-    SLOG("Could not find restart file: ", new_ctgs_fname, "\n");
-    return false;
-  }
-  if (stage_type == "contigs") {
-    if (k == kmer_lens.back() && stage_type == "contigs") {
-      max_kmer_len = kmer_lens.back();
-      kmer_lens = {};
-      stage_type = "scaff-contigs";
-      k = scaff_kmer_lens[0];
-    } else {
-      if (!extract_previous_lens(kmer_lens, k)) {
-        SWARN("Cannot find kmer length ", k, " in configuration: ", vec_to_str(kmer_lens));
-        return false;
-      }
-      prev_kmer_len = k;
-    }
-    ctgs_fname = new_ctgs_fname;
-  } else if (stage_type == "uutigs") {
-    if (!extract_previous_lens(kmer_lens, k)) {
-      SWARN("Cannot find kmer length ", k, " in configuration: ", vec_to_str(kmer_lens));
-      return false;
-    }
-    kmer_lens.insert(kmer_lens.begin(), k);
-    prev_kmer_len = k;
-    ctgs_fname = new_ctgs_fname;
-  } else if (stage_type == "scaff-contigs") {
-    max_kmer_len = kmer_lens.back();
-    kmer_lens = {};
-    if (k == scaff_kmer_lens.front()) {
-      ctgs_fname = "contigs-" + to_string(k) + ".fasta";
-    } else {
-      if (k == scaff_kmer_lens.back()) k = scaff_kmer_lens[scaff_kmer_lens.size() - 2];
-      ctgs_fname = "scaff-contigs-" + to_string(k) + ".fasta";
-    }
-    if (!extract_previous_lens(scaff_kmer_lens, k)) {
-      SWARN("Cannot find kmer length ", k, " in configuration: ", vec_to_str(scaff_kmer_lens));
-      return false;
-    }
-  } else {
-    SWARN("Invalid previous stage '", stage_type, "' k ", k, ", could not restart");
-    return false;
-  }
-  SLOG(KLBLUE, "Restart options:\n", "  kmer-lens =              ", vec_to_str(kmer_lens), "\n",
-       "  scaff-kmer-lens =        ", vec_to_str(scaff_kmer_lens), "\n", "  prev-kmer-len =          ", prev_kmer_len, "\n",
-       "  max-kmer-len =           ", max_kmer_len, "\n", "  contigs =                ", ctgs_fname, KNORM, "\n");
-  if (!upcxx::rank_me() && !file_exists(ctgs_fname)) {
-    SWARN("File ", ctgs_fname, " not found. Did the previous run have --checkpoint enabled?");
-    return false;
-  }
-  return true;
-}
 
-void Options::get_restart_options() {
-  // check directory for most recent contigs file dump
-  bool found = false;
-  for (auto it = scaff_kmer_lens.rbegin(); it != scaff_kmer_lens.rend(); ++it) {
-    if ((found = find_restart("scaff-contigs", *it)) == true) break;
-  }
-  if (!found) {
-    for (auto it = kmer_lens.rbegin(); it != kmer_lens.rend(); ++it) {
-      if ((found = find_restart("contigs", *it)) == true) break;
-      if ((found = find_restart("uutigs", *it)) == true) break;
-    }
-  }
-  if (!found) {
-    SWARN("No previously completed stage found, restarting from the beginning\n");
-  }
-}
+
+
 
 double Options::setup_output_dir() {
   auto t_start = chrono::high_resolution_clock::now();
@@ -161,12 +93,6 @@ double Options::setup_output_dir() {
   if (!upcxx::rank_me()) {
     // create the output directory (and possibly stripe it)
 
-    if (restart) {
-      // it must already exist for a restart
-      if (access(output_dir.c_str(), F_OK) == -1) {
-        SDIE("Output directory ", output_dir, " for restart does not exist");
-      }
-    }
 
     // always try to make the output_dir
     if (mkdir(output_dir.c_str(), S_IRWXU | S_IRWXG | S_IRWXO | S_ISGID /*use default mode/umask */) == -1) {
@@ -279,15 +205,13 @@ double Options::setup_log_file() {
   auto t_start = chrono::high_resolution_clock::now();
   if (!upcxx::rank_me()) {
     // check to see if mhm2.log exists. If so, and not restarting, rename it
-    if (file_exists("mhm2.log") && !restart) {
+    if (file_exists("mhm2.log") ) {
       string new_log_fname = "mhm2-" + setup_time + ".log";
       cerr << KLRED << "WARNING: " << KNORM << output_dir << "/mhm2.log exists. Renaming to " << output_dir << "/" << new_log_fname
            << endl;
       if (rename("mhm2.log", new_log_fname.c_str()) == -1) DIE("Could not rename mhm2.log: ", strerror(errno));
       // also unlink the rank0 per_rank file (a hard link if it exists)
       unlink("per_rank/00000000/00000000/mhm2.log");  // ignore any errors
-    } else if (!file_exists("mhm2.log") && restart) {
-      DIE("Could not restart - missing mhm2.log in this directory");
     }
   }
   upcxx::barrier();
@@ -373,9 +297,7 @@ bool Options::load(int argc, char **argv) {
                "(debugging option) enables checkpointing of merged fastq files in the output directory")
       ->capture_default_str()
       ->multi_option_policy();
-  app.add_flag("--restart", restart,
-               "Restart in previous directory where a run failed (must specify the previous directory with -o).")
-      ->capture_default_str();
+  
   
   app.add_flag("--post-asm-align", post_assm_aln, "Align reads to final assembly")->capture_default_str();
   app.add_flag("--post-asm-abd", post_assm_abundances, "Compute and output abundances for final assembly (used by MetaBAT).")
@@ -390,13 +312,7 @@ bool Options::load(int argc, char **argv) {
   auto *cfg_opt = app.set_config("--config", "", "Load options from a configuration file.");
 
   // advanced options
-  // restarts
-  app.add_option("-c, --contigs", ctgs_fname, "FASTA file containing contigs used for restart.");
-  app.add_option("--max-kmer-len", max_kmer_len, "Maximum contigging kmer length for restart (only needed if not contigging).")
-      ->check(CLI::Range(0, 159));
-  app.add_option("--prev-kmer-len", prev_kmer_len,
-                 "Previous contigging kmer length for restart (needed if contigging and contig file is specified).")
-      ->check(CLI::Range(0, 159));
+  
   // quality tuning
   app.add_option("--break-scaff-Ns", break_scaff_Ns, "Number of Ns allowed before a scaffold is broken.")
       ->check(CLI::Range(0, 1000));
@@ -454,7 +370,7 @@ bool Options::load(int argc, char **argv) {
     app.get_option("--restart")->default_val("false");
   }
 
-  if (!restart && reads_fnames.empty()) {
+  if ( reads_fnames.empty()) {
     if (!rank_me())
       cerr << "\nError in command line:\nRequire read names if not restarting\nRun with --help for more information\n";
     return false;
@@ -465,11 +381,7 @@ bool Options::load(int argc, char **argv) {
   upcxx::barrier();
 
   if (!*output_dir_opt) {
-    if (restart) {
-      if (!rank_me())
-        cerr << "\nError in command line:\nRequire output directory when restarting run\nRun with --help for more information\n";
-      return false;
-    }
+    
     string first_read_fname = reads_fnames[0];
     // strip out the paired or unpaired/single the possible ':' in the name string
     auto colpos = first_read_fname.find_last_of(':');
@@ -511,18 +423,7 @@ bool Options::load(int argc, char **argv) {
   // save to per_rank, but hardlink to output_dir
   string config_file = "per_rank/mhm2.config";
   string linked_config_file = "mhm2.config";
-  if (restart) {
-    // use per_rank to read/write this small file, hardlink to top run level
-    try {
-      app.parse_config(linked_config_file);
-    } catch (const CLI::ConfigError &e) {
-      if (!upcxx::rank_me()) {
-        cerr << "\nError (" << e.get_exit_code() << ") in config file (" << config_file << "):\n";
-        app.exit(e);
-      }
-      return false;
-    }
-  }
+ 
 
   if (max_kmer_store_mb == 0) {
     // use 1% of the minimum available memory
@@ -534,11 +435,7 @@ bool Options::load(int argc, char **argv) {
   if (upcxx::local_team().rank_me() == 0) {
     // open 1 log per node
     // all have logs in per_rank
-    if (rank_me() == 0 && restart) {
-      auto ret = rename("mhm2.log", "per_rank/00000000/00000000/mhm2.log");
-      if (ret != 0)
-        SWARN("For this restart, could not rename mhm2.log to per_rank/00000000/00000000/mhm2.log: ", strerror(errno), "\n");
-    }
+    
     init_logger("mhm2.log", verbose, true);
     // if not restarting, hardlink just the rank0 log to the output dir
     // this ensures a stripe count of 1 even when the output dir is striped wide
@@ -559,8 +456,7 @@ bool Options::load(int argc, char **argv) {
 
   SLOG(KLBLUE, full_version_str, KNORM, "\n");
 
-  if (restart) get_restart_options();
-
+  
   if (upcxx::rank_me() == 0) {
     // print out all compiler definitions
     SLOG_VERBOSE(KLBLUE, "_________________________", KNORM, "\n");
@@ -588,7 +484,7 @@ bool Options::load(int argc, char **argv) {
     ofs.close();
     unlink(linked_config_file.c_str());  // ignore errors
     auto ret = link(config_file.c_str(), linked_config_file.c_str());
-    if (ret != 0 && !restart) LOG("Could not hard link config file, continuing\n");
+    if (ret != 0 ) LOG("Could not hard link config file, continuing\n");
   }
   upcxx::barrier();
   return true;
