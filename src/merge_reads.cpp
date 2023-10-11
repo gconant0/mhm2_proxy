@@ -224,103 +224,11 @@ int16_t fast_count_mismatches(const char *a, const char *b, int len, int16_t max
 // FIXME: don't store the string again for every kmer
 using adapter_hash_table_t = HASH_TABLE<Kmer<MAX_ADAPTER_K>, vector<string>>;
 
-static void load_adapter_seqs(const string &fname, adapter_hash_table_t &adapters, int adapter_k) {
-  ifstream f(fname);
-  if (!f.is_open()) DIE("Could not open adapters file '", fname, "': ", strerror(errno));
-  string line;
-  string name;
-  int num = 0;
-  while (getline(f, line)) {
-    if (line[0] == '>') {
-      name = line;
-      continue;
-    }
-    num++;
-    if (line.length() < adapter_k) {
-      SWARN("adapter seq for ", name, " is too short ", line.length(), " < ", adapter_k);
-      continue;
-    }
-    vector<Kmer<MAX_ADAPTER_K>> kmers;
-    Kmer<MAX_ADAPTER_K>::set_k(adapter_k);
-    Kmer<MAX_ADAPTER_K>::get_kmers(adapter_k, line, kmers, false);
-    for (int i = 0; i < kmers.size(); i++) {
-      auto kmer = kmers[i];
-      auto it = adapters.find(kmer);
 
-      if (it == adapters.end())
-        adapters.insert({kmer, {line}});
-      else
-        it->second.push_back(line);
-      // revcomped adapters are very rare, so we don't bother with them
-      // insert both kmer and kmer revcomp so we don't have to revcomp kmers in reads, which takes more time and since this is
-      // such a small table storing both kmer and kmer_rc is fine
-      auto kmer_rc = kmer.revcomp();
-      auto line_rc = revcomp(line);
-      it = adapters.find(kmer_rc);
-      if (it == adapters.end())
-        adapters.insert({kmer_rc, {line_rc}});
-      else
-        it->second.push_back(line_rc);
-    }
-  }
-  SLOG_VERBOSE("Loaded ", num, " adapters, with a total of ", adapters.size(), " kmers\n");
-  /*
-#ifdef DEBUG
-  barrier();
-  if (!rank_me()) {
-    for (auto [kmer, seqs] : adapters) {
-      for (auto seq : seqs) {
-        DBG("adapter: ", kmer, " ", seq.first, " ", seq.second, "\n");
-      }
-    }
-  }
-  barrier();
-#endif
-*/
-}
 
-static void trim_adapters(StripedSmithWaterman::Aligner &ssw_aligner, StripedSmithWaterman::Filter &ssw_filter,
-                          adapter_hash_table_t &adapters, const string &rname, string &seq, bool is_read_1, int adapter_k,
-                          int64_t &bases_trimmed, int64_t &reads_removed) {
-  vector<Kmer<MAX_ADAPTER_K>> kmers;
-  // Kmer<MAX_ADAPTER_K>::set_k(adapter_k);
-  Kmer<MAX_ADAPTER_K>::get_kmers(adapter_k, seq, kmers, false);
-  double best_identity = 0;
-  int best_trim_pos = seq.length();
-  string best_adapter_seq;
-  HASH_TABLE<string, bool> adapters_matching;
-  for (auto &kmer : kmers) {
-    auto it = adapters.find(kmer);
-    if (it != adapters.end()) {
-      for (auto &adapter_seq : it->second) {
-        if (adapters_matching.find(adapter_seq) != adapters_matching.end()) continue;
-        adapters_matching[adapter_seq] = true;
-        StripedSmithWaterman::Alignment ssw_aln;
-        ssw_aligner.Align(adapter_seq.data(), adapter_seq.length(), seq.data(), seq.length(), ssw_filter, &ssw_aln,
-                          max((int)(seq.length() / 2), 15));
-        int max_match_len = min(adapter_seq.length(), seq.length() - ssw_aln.ref_begin);
-        double identity = (double)ssw_aln.sw_score / (double)ALN_MATCH_SCORE / (double)(max_match_len);
-        if (identity >= best_identity) {
-          best_identity = identity;
-          best_trim_pos = ssw_aln.ref_begin;
-          best_adapter_seq = adapter_seq;
-        }
-        break;
-      }
-    }
-  }
-  if (best_identity >= 0.5) {
-    if (best_trim_pos < 12) best_trim_pos = 0;
-    DBG("Read ", rname, " is trimmed at ", best_trim_pos, " best identity ", best_identity, "\n", best_adapter_seq, "\n", seq,
-        "\n");
-    if (!best_trim_pos) reads_removed++;
-    bases_trimmed += seq.length() - best_trim_pos;
-    seq.resize(best_trim_pos);
-  }
-}
 
 void merge_reads(vector<string> reads_fname_list, int qual_offset, double &elapsed_write_io_t,
-                 vector<PackedReads *> &packed_reads_list, bool checkpoint, const string &adapter_fname, int min_kmer_len) {
+                 vector<PackedReads *> &packed_reads_list, bool checkpoint, int min_kmer_len) {
   BarrierTimer timer(__FILEFUNC__);
   Timer merge_time(__FILEFUNC__ + " merging all");
 
@@ -329,8 +237,7 @@ void merge_reads(vector<string> reads_fname_list, int qual_offset, double &elaps
                                             ALN_AMBIGUITY_COST);
   StripedSmithWaterman::Filter ssw_filter;
   ssw_filter.report_cigar = false;
-  if (!adapter_fname.empty()) load_adapter_seqs(adapter_fname, adapters, min_kmer_len);
-
+  
   FastqReaders::open_all(reads_fname_list);
   vector<string> merged_reads_fname_list;
 
@@ -427,18 +334,7 @@ void merge_reads(vector<string> reads_fname_list, int qual_offset, double &elaps
       if (id1.compare(0, id1.length() - 2, id2, 0, id2.length() - 2) != 0) DIE("Mismatched pairs ", id1, " ", id2);
       if (id1[id1.length() - 1] != '1' || id2[id2.length() - 1] != '2') DIE("Mismatched pair numbers ", id1, " ", id2);
 
-      if (!adapters.empty()) {
-        trim_adapters(ssw_aligner, ssw_filter, adapters, id1, seq1, true, min_kmer_len, bases_trimmed, reads_removed);
-        trim_adapters(ssw_aligner, ssw_filter, adapters, id2, seq2, false, min_kmer_len, bases_trimmed, reads_removed);
-        // trim to same length - like the tpe option in bbduk
-        auto min_seq_len = min(seq1.length(), seq2.length());
-        seq1.resize(min_seq_len);
-        seq2.resize(min_seq_len);
-        // it's possible that really short reads could be merged, but unlikely and they'd still be short, so drop all below min
-        // kmer length
-        if (seq1.length() < min_kmer_len) continue;
-      }
-
+      
       bool is_merged = 0;
       int8_t abort_merge = 0;
 
