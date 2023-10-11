@@ -196,11 +196,7 @@ int main(int argc, char **argv) {
       packed_reads->report_size();
     }
 
-    if (!options->ctgs_fname.empty()) {
-      stage_timers.load_ctgs->start();
-      ctgs.load_contigs(options->ctgs_fname);
-      stage_timers.load_ctgs->stop();
-    }
+    
     std::chrono::duration<double> init_t_elapsed = std::chrono::high_resolution_clock::now() - init_start_t;
     SLOG("\n");
     SLOG(KBLUE, "Completed initialization in ", setprecision(2), fixed, init_t_elapsed.count(), " s at ", get_current_time(), " (",
