@@ -285,16 +285,9 @@ bool Options::load(int argc, char **argv) {
   auto *output_dir_opt = app.add_option("-o,--output", output_dir, "Output directory.")->capture_default_str();
   
  
-  
-  
-  app.add_flag("--post-asm-align", post_assm_aln, "Align reads to final assembly")->capture_default_str();
-  app.add_flag("--post-asm-abd", post_assm_abundances, "Compute and output abundances for final assembly (used by MetaBAT).")
-      ->capture_default_str();
-  app.add_flag("--post-asm-only", post_assm_only, "Only run post assembly (alignment and/or abundances).")->capture_default_str();
   app.add_flag("--write-gfa", dump_gfa, "Write scaffolding contig graphs in GFA2 format.")->capture_default_str();
   app.add_flag("--dump-kmers", dump_kmers, "Write kmers out after kmer counting.")->capture_default_str();
-  app.add_option("-Q, --quality-offset", qual_offset, "Phred encoding offset (auto-detected by default).")
-      ->check(CLI::IsMember({0, 33, 64}));
+  
   app.add_flag("--progress", show_progress, "Show progress bars for operations.");
   app.add_flag("-v, --verbose", verbose, "Verbose output: lots of detailed information (always available in the log).");
   auto *cfg_opt = app.set_config("--config", "", "Load options from a configuration file.");
