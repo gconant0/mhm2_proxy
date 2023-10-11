@@ -45,7 +45,6 @@
 #include "contigging.hpp"
 #include "klign.hpp"
 #include "fastq.hpp"
-#include "scaffolding.hpp"
 #include "stage_timers.hpp"
 #include "gasnet_stats.hpp"
 #include "upcxx_utils.hpp"
@@ -255,52 +254,6 @@ int main(int argc, char **argv) {
       }
     }
 
-    // scaffolding loops
-    if (options->dump_gfa) {
-      if (options->scaff_kmer_lens.size())
-        options->scaff_kmer_lens.push_back(options->scaff_kmer_lens.back());
-      else
-        options->scaff_kmer_lens.push_back(options->kmer_lens[0]);
-    }
-    if (options->scaff_kmer_lens.size()) {
-      if (!max_kmer_len) {
-        if (options->max_kmer_len)
-          max_kmer_len = options->max_kmer_len;
-        else
-          max_kmer_len = options->scaff_kmer_lens.front();
-      }
-      for (unsigned i = 0; i < options->scaff_kmer_lens.size(); ++i) {
-        auto scaff_kmer_len = options->scaff_kmer_lens[i];
-        auto max_k = (scaff_kmer_len / 32 + 1) * 32;
-        LOG(upcxx_utils::GasNetVars::getUsedShmMsg(), "\n");
-
-#define SCAFFOLD_K(KMER_LEN)                                                                                                \
-  case KMER_LEN:                                                                                                            \
-    scaffolding<KMER_LEN>(i, max_kmer_len, rlen_limit, packed_reads_list, ctgs, max_expected_ins_size, ins_avg, ins_stddev, \
-                          options);                                                                                         \
-    break
-
-        switch (max_k) {
-          SCAFFOLD_K(32);
-#if MAX_BUILD_KMER >= 64
-          SCAFFOLD_K(64);
-#endif
-#if MAX_BUILD_KMER >= 96
-          SCAFFOLD_K(96);
-#endif
-#if MAX_BUILD_KMER >= 128
-          SCAFFOLD_K(128);
-#endif
-#if MAX_BUILD_KMER >= 160
-          SCAFFOLD_K(160);
-#endif
-          default: DIE("Built for max k = ", MAX_BUILD_KMER, " not k = ", max_k);
-        }
-#undef SCAFFOLD_K
-      }
-    } else {
-      SLOG_VERBOSE("Skipping scaffolding stage - no scaff_kmer_lens specified\n");
-    }
 
     // cleanup
     FastqReaders::close_all();  // needed to cleanup any open files in this singleton
