@@ -42,7 +42,6 @@
 
 #include "contigging.hpp"
 
-#include "histogrammer.hpp"
 #include "kcount/kcount.hpp"
 #include "kmer_dht.hpp"
 #include "stage_timers.hpp"

@@ -207,7 +207,6 @@ foreach(
   options
   merge_reads
   dbjg_traversal
-  histogrammer
   ${EXTERN_TEMPLATE_FILES})
   add_library(${tgt} OBJECT ${tgt}.cpp)
   if(${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.13 AND DEFINED UPCXX_LIBRARIES)
