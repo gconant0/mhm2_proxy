@@ -46,7 +46,6 @@
 #include "klign.hpp"
 #include "fastq.hpp"
 #include "stage_timers.hpp"
-#include "gasnet_stats.hpp"
 #include "upcxx_utils.hpp"
 #include "upcxx_utils/thread_pool.hpp"
 #include "utils.hpp"
@@ -74,12 +73,6 @@ int main(int argc, char **argv) {
   auto init_timings_fut = init_timer.reduce_timings();
   upcxx::promise<> report_init_timings(1);
 
-  const char *gasnet_statsfile = getenv("GASNET_STATSFILE");
-#if defined(ENABLE_GASNET_STATS)
-  if (gasnet_statsfile) _gasnet_stats = true;
-#else
-  if (gasnet_statsfile) SWARN("No GASNet statistics will be collected - use Debug or RelWithDebInfo modes to enable collection.");
-#endif
 
   // we wish to have all ranks start at the same time to determine actual timing
   first_barrier.start();
@@ -181,12 +174,12 @@ int main(int argc, char **argv) {
     double elapsed_write_io_t = 0;
     if ((!options->restart || !options->checkpoint_merged) && !options->kmer_lens.empty()) {
       // merge the reads and insert into the packed reads memory cache
-      begin_gasnet_stats("merge_reads");
+      
       stage_timers.merge_reads->start();
       merge_reads(options->reads_fnames, options->qual_offset, elapsed_write_io_t, packed_reads_list, options->checkpoint_merged,
                   options->adapter_fname, options->kmer_lens[0]);
       stage_timers.merge_reads->stop();
-      end_gasnet_stats();
+      
     } else {
       // since this is a restart with checkpoint_merged true, the merged reads should be on disk already
       // load the merged reads instead of merge the original ones again
