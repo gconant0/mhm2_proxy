@@ -45,7 +45,6 @@
 #include "contigging.hpp"
 #include "klign.hpp"
 #include "fastq.hpp"
-#include "post_assembly.hpp"
 #include "scaffolding.hpp"
 #include "stage_timers.hpp"
 #include "gasnet_stats.hpp"
