@@ -348,34 +348,6 @@ int main(int argc, char **argv) {
   }
   FastqReaders::close_all();
 
-  // post processing
-  if (options->post_assm_aln || options->post_assm_only || options->post_assm_abundances) {
-    int kmer_len = 33;
-    if (options->post_assm_only && !options->ctgs_fname.empty()) ctgs.load_contigs(options->ctgs_fname);
-    auto max_k = (kmer_len / 32 + 1) * 32;
-
-#define POST_ASSEMBLY(KMER_LEN) \
-  case KMER_LEN: post_assembly<KMER_LEN>(kmer_len, ctgs, options, max_expected_ins_size); break
-
-    switch (max_k) {
-      POST_ASSEMBLY(32);
-#if MAX_BUILD_KMER >= 64
-      POST_ASSEMBLY(64);
-#endif
-#if MAX_BUILD_KMER >= 96
-      POST_ASSEMBLY(96);
-#endif
-#if MAX_BUILD_KMER >= 128
-      POST_ASSEMBLY(128);
-#endif
-#if MAX_BUILD_KMER >= 160
-      POST_ASSEMBLY(160);
-#endif
-      default: DIE("Built for maximum kmer of ", MAX_BUILD_KMER, " not ", max_k); break;
-    }
-#undef POST_ASSEMBLY
-    FastqReaders::close_all();
-  }
 
   upcxx_utils::ThreadPool::join_single_pool();  // cleanup singleton thread pool
   upcxx_utils::Timings::wait_pending();         // ensure all outstanding timing summaries have printed
