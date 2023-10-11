@@ -185,8 +185,6 @@ include_directories("kcount")
 add_subdirectory(kcount)
 include_directories("klign")
 add_subdirectory(klign)
-include_directories("localassm")
-add_subdirectory(localassm)
 include_directories("cgraph")
 add_subdirectory(cgraph)
 
@@ -253,7 +251,6 @@ set(MHM2_LINK_LIBRARIES
     SSW_LIBRARY
     KCOUNT_LIBRARY
     KLIGN_LIBRARY
-    LOCALASSM_LIBRARY
     CGRAPH_LIBRARY
     ${ZLIB_LIBRARIES}
     MHM2_VERSION_LIB)
