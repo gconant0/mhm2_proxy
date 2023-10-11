@@ -43,7 +43,6 @@
 #include <sys/resource.h>
 
 #include "contigging.hpp"
-#include "klign.hpp"
 #include "fastq.hpp"
 #include "stage_timers.hpp"
 #include "upcxx_utils.hpp"
