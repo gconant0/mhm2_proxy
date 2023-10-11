@@ -271,8 +271,6 @@ bool Options::load(int argc, char **argv) {
   app.add_option("-u, --unpaired-reads", unpaired_fnames, "Unpaired or single reads in FASTQ format (comma or space separated).")
       ->delimiter(',')
       ->check(CLI::ExistingFile);
-  app.add_option("--adapter-refs", adapter_fname, "File containing adapter sequences for trimming in FASTA format.")
-      ->check(CLI::ExistingFile);
   app.add_option("-i, --insert", insert_size, "Insert size (average:stddev) (autodetected by default).")
       ->delimiter(':')
       ->expected(2)
@@ -289,14 +287,7 @@ bool Options::load(int argc, char **argv) {
       ->check(CLI::Range(0, 100000));
   auto *output_dir_opt = app.add_option("-o,--output", output_dir, "Output directory.")->capture_default_str();
   
-  app.add_flag("--checkpoint", checkpoint, "Enable checkpointing.")
-      ->default_val(checkpoint ? "true" : "false")
-      ->capture_default_str()
-      ->multi_option_policy();
-  app.add_flag("--checkpoint-merged", checkpoint_merged,
-               "(debugging option) enables checkpointing of merged fastq files in the output directory")
-      ->capture_default_str()
-      ->multi_option_policy();
+ 
   
   
   app.add_flag("--post-asm-align", post_assm_aln, "Align reads to final assembly")->capture_default_str();
