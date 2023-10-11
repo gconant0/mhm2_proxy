@@ -277,11 +277,7 @@ int main(int argc, char **argv) {
     SLOG("    ", stage_timers.analyze_kmers->get_final(), "\n");
     SLOG("      -> ", stage_timers.kernel_kmer_analysis->get_final(), "\n");
     SLOG("    ", stage_timers.dbjg_traversal->get_final(), "\n");
-    SLOG("    ", stage_timers.alignments->get_final(), "\n");
-    SLOG("      -> ", stage_timers.kernel_alns->get_final(), "\n");
-   
-    if (options->shuffle_reads) SLOG("    ", stage_timers.shuffle_reads->get_final(), "\n");
-    SLOG("    ", stage_timers.cgraph->get_final(), "\n");
+    
     SLOG("    FASTQ total read time: ", FastqReader::get_io_time(), "\n");
     SLOG("    merged FASTQ write time: ", elapsed_write_io_t, "\n");
     SLOG("    Contigs write time: ", stage_timers.dump_ctgs->get_elapsed(), "\n");
