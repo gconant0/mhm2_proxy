@@ -53,7 +53,6 @@
 
 #include "upcxx_utils/log.hpp"
 #include "upcxx_utils/ofstream.hpp"
-#include "upcxx_utils/progress_bar.hpp"
 #include "upcxx_utils/timers.hpp"
 #include "utils.hpp"
 #include "zstr.hpp"
@@ -234,7 +233,7 @@ void Contigs::load_contigs(const string &ctgs_fname) {
   auto stop_offset = dist_stop_prom->get_future().wait();
 
   size_t tot_len = 0;
-  ProgressBar progbar(stop_offset - start_offset, "Parsing contigs");
+  
   // these can be equal if the contigs are very long and there are many ranks so this one doesn't get even a full contig
   ctgs_file.seekg(start_offset);
   while (!ctgs_file.eof()) {
@@ -245,7 +244,7 @@ void Contigs::load_contigs(const string &ctgs_fname) {
     if (seq == "") break;
     tot_len += seq.length();
     bytes_read += cname.length() + seq.length();
-    progbar.update(bytes_read);
+    
     // extract the id
     char *endptr;
     int64_t id = strtol(cname.c_str() + 7, &endptr, 10);
@@ -256,7 +255,7 @@ void Contigs::load_contigs(const string &ctgs_fname) {
   }
   if (ctgs_file.tellg() < stop_offset)
     DIE("Did not read the entire contigs file from ", start_offset, " to ", stop_offset, " tellg=", ctgs_file.tellg());
-  progbar.done();
+  
   barrier();
   SLOG_VERBOSE("Loaded ", reduce_one(contigs.size(), op_fast_add, 0).wait(), " contigs (",
                get_size_str(reduce_one(tot_len, op_fast_add, 0).wait()), ") from ", ctgs_fname, "\n");
