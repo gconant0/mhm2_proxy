@@ -53,7 +53,7 @@
 
 #include "upcxx_utils/log.hpp"
 #include "upcxx_utils/ofstream.hpp"
-#include "upcxx_utils/timers.hpp"
+
 #include "utils.hpp"
 #include "zstr.hpp"
 
@@ -90,7 +90,7 @@ void Contigs::add_contig(Contig contig) { contigs.push_back(contig); }
 size_t Contigs::size() { return contigs.size(); }
 
 void Contigs::print_stats(unsigned min_ctg_len) {
-  BarrierTimer timer(__FILEFUNC__);
+  
   int64_t tot_len = 0, max_len = 0;
   double tot_depth = 0;
   vector<pair<unsigned, uint64_t>> length_sums({{1, 0}, {5, 0}, {10, 0}, {25, 0}, {50, 0}});
@@ -164,7 +164,7 @@ void Contigs::print_stats(unsigned min_ctg_len) {
 }
 
 void Contigs::dump_contigs(const string &fname, unsigned min_ctg_len) {
-  BarrierTimer timer(__FILEFUNC__);
+  
   dist_ofstream of(fname);
   for (auto it = contigs.begin(); it != contigs.end(); ++it) {
     auto ctg = it;
