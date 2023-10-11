@@ -161,50 +161,8 @@ void contigging(int kmer_len, int prev_kmer_len, int rlen_limit, vector<PackedRe
       }
     }
     barrier();
-    Alns alns;
-    stage_timers.alignments->start();
-    bool first_ctg_round = (kmer_len == options->kmer_lens[0]);
-    double kernel_elapsed =
-        find_alignments<MAX_K>(kmer_len, packed_reads_list, max_kmer_store, options->max_rpcs_in_flight, ctgs, alns,
-                               KLIGN_SEED_SPACE, rlen_limit, (options->klign_kmer_cache & !first_ctg_round), false, 0);
-    stage_timers.kernel_alns->inc_elapsed(kernel_elapsed);
-    stage_timers.alignments->stop();
-    barrier();
-    /*
-    if (kmer_len == options->kmer_lens.front()) {
-      size_t num_reads = 0;
-      for (auto packed_reads : packed_reads_list) {
-        num_reads += packed_reads->get_local_num_reads();
-      }
-      auto avg_num_reads = reduce_one(num_reads, op_fast_add, 0).wait() / rank_n();
-      auto max_num_reads = reduce_one(num_reads, op_fast_max, 0).wait();
-      SLOG_VERBOSE("Avg reads per rank ", avg_num_reads, " max ", max_num_reads, " (balance ",
-                   (double)avg_num_reads / max_num_reads, ")\n");
-      if (options->shuffle_reads) {
-        stage_timers.shuffle_reads->start();
-        shuffle_reads(options->qual_offset, packed_reads_list, alns, ctgs);
-        stage_timers.shuffle_reads->stop();
-        num_reads = 0;
-        for (auto packed_reads : packed_reads_list) {
-          num_reads += packed_reads->get_local_num_reads();
-        }
-        avg_num_reads = reduce_one(num_reads, op_fast_add, 0).wait() / rank_n();
-        max_num_reads = reduce_one(num_reads, op_fast_max, 0).wait();
-        SLOG_VERBOSE("After shuffle: avg reads per rank ", avg_num_reads, " max ", max_num_reads, " (load balance ",
-                     (double)avg_num_reads / max_num_reads, ")\n");
-      }
-    }
-    */
-#ifdef DEBUG
-    alns.dump_rank_file("ctg-" + to_string(kmer_len) + ".alns.gz");
-#endif
-    tie(ins_avg, ins_stddev) = calculate_insert_size(alns, options->insert_size[0], options->insert_size[1], max_expected_ins_size);
-    // insert size should never be larger than this; if it is that signals some error in the assembly
-    max_expected_ins_size = ins_avg + 8 * ins_stddev;
-    barrier();
-    stage_timers.localassm->start();
-    localassm(LASSM_MAX_KMER_LEN, kmer_len, packed_reads_list, ins_avg, ins_stddev, options->qual_offset, ctgs, alns);
-    stage_timers.localassm->stop();
+      
+
   }
   barrier();
   if (is_debug || options->checkpoint) {
