@@ -59,7 +59,8 @@ template <int MAX_K>
 void traverse_debruijn_graph(unsigned kmer_len, dist_object<KmerDHT<MAX_K>> &kmer_dht, Contigs &my_uutigs);
 
 static uint64_t estimate_num_kmers(unsigned kmer_len, vector<PackedReads *> &packed_reads_list) {
-  BarrierTimer timer(__FILEFUNC__);
+  
+    barrier();
   int64_t num_kmers = 0;
   int64_t num_reads = 0;
   int64_t tot_num_reads = 0;
@@ -150,9 +151,9 @@ void contigging(int kmer_len, int prev_kmer_len, int rlen_limit, vector<PackedRe
   }
   SLOG(KBLUE "_________________________", KNORM, "\n");
   ctgs.print_stats(500);
-  std::chrono::duration<double> loop_t_elapsed = std::chrono::high_resolution_clock::now() - loop_start_t;
+  
   SLOG("\n");
-  SLOG(KBLUE, "Completed contig round k = ", kmer_len, " in ", setprecision(2), fixed, loop_t_elapsed.count(), " s at ",
+  SLOG(KBLUE, "Completed contig round k = ", kmer_len, " at ",
        get_current_time(), " (", get_size_str(get_free_mem()), " free memory on node 0)", KNORM, "\n");
   barrier();
 }
