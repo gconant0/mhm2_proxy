@@ -230,7 +230,7 @@ int main(int argc, char **argv) {
 
     // cleanup
     FastqReaders::close_all();  // needed to cleanup any open files in this singleton
-    auto fin_start_t = std::chrono::high_resolution_clock::now();
+    
     for (auto packed_reads : packed_reads_list) {
       delete packed_reads;
     }
