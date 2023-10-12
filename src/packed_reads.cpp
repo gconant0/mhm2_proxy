@@ -245,72 +245,7 @@ void PackedReads::add_read(const string &read_id, const string &seq, const strin
   bases += seq.length();
 }
 
-void PackedReads::load_reads(PackedReadsList &packed_reads_list) {
-  BarrierTimer timer(__FILEFUNC__);
-  upcxx::future<> all_done = upcxx::make_future();
-  for (auto pr : packed_reads_list) {
-    FastqReaders::open(pr->fname);
-  }
-  for (auto pr : packed_reads_list) {
-    upcxx::discharge();
-    upcxx::progress();
-    auto fut = pr->load_reads_nb();
-    all_done = when_all(all_done, fut);
-  }
-  FastqReaders::close_all();
-  all_done.wait();
-}
 
-upcxx::future<> PackedReads::load_reads_nb() {
-  // first estimate the number of records
-  size_t tot_bytes_read = 0;
-  int64_t num_records = 0;
-  FastqReader &fqr = FastqReaders::get(fname);
-  fqr.advise(true);
-  string id, seq, quals;
-  for (num_records = 0; num_records < 20000; num_records++) {
-    size_t bytes_read = fqr.get_next_fq_record(id, seq, quals);
-    if (!bytes_read) break;
-    tot_bytes_read += bytes_read;
-  }
-  int64_t bytes_per_record = num_records == 0 ? 0 : tot_bytes_read / num_records;
-  int64_t estimated_records = bytes_per_record == 0 ? 0 : fqr.my_file_size() / bytes_per_record;
-  int64_t reserve_records = estimated_records * 1.10 + 10000;  // reserve more so there is not a big reallocation if it is under
-  packed_reads.reserve(reserve_records);
-  fqr.reset();
-  ProgressBar progbar(fqr.my_file_size(), "Loading reads from " + fname + " " + get_size_str(fqr.my_file_size()));
-  tot_bytes_read = 0;
-  int lines = 0;
-  while (true) {
-    size_t bytes_read = fqr.get_next_fq_record(id, seq, quals);
-    if (!bytes_read) break;
-    tot_bytes_read += bytes_read;
-    progbar.update(tot_bytes_read);
-    add_read(id, seq, quals);
-  }
-  fqr.advise(false);
-  FastqReaders::close(fname);
-  auto fut = progbar.set_done();
-  int64_t underestimate = estimated_records - packed_reads.size();
-  if (underestimate < 0 && reserve_records < packed_reads.size())
-    LOG("NOTICE Underestimated by ", -underestimate, " estimated ", estimated_records, " found ", packed_reads.size(), "\n");
-  auto all_under_estimated_fut = upcxx::reduce_one(underestimate < 0 ? 1 : 0, upcxx::op_fast_add, 0);
-  auto all_estimated_records_fut = upcxx::reduce_one(estimated_records, upcxx::op_fast_add, 0);
-  auto all_num_records_fut = upcxx::reduce_one(packed_reads.size(), upcxx::op_fast_add, 0);
-  auto all_num_bases_fut = upcxx::reduce_one(bases, upcxx::op_fast_add, 0);
-  return when_all(fut, all_under_estimated_fut, all_estimated_records_fut, all_num_records_fut, all_num_bases_fut)
-      .then([max_read_len = this->max_read_len](int64_t all_under_estimated, int64_t all_estimated_records, int64_t all_num_records,
-                                                int64_t all_num_bases) {
-        SLOG_VERBOSE("Loaded ", all_num_records, " reads (estimated ", all_estimated_records, " with ", all_under_estimated,
-                     " ranks underestimated) max_read=", max_read_len, " tot_bases=", all_num_bases, "\n");
-      });
-}
-
-void PackedReads::load_reads() {
-  BarrierTimer timer(__FILEFUNC__);
-  load_reads_nb().wait();
-  upcxx::barrier();
-}
 
 void PackedReads::report_size() {
   auto all_num_records = upcxx::reduce_one(packed_reads.size(), upcxx::op_fast_add, 0).wait();
