@@ -62,30 +62,11 @@ void merge_reads(vector<string> reads_fname_list, int qual_offset,
                  vector<PackedReads *> &packed_reads_list, bool checkpoint,  int min_kmer_len);
 
 int main(int argc, char **argv) {
-  BaseTimer init_timer("upcxx::init");
-  BaseTimer first_barrier("FirstBarrier");
-  init_timer.start();
+  
   upcxx::init();
-  auto init_entry_msm_fut = init_timer.reduce_start();
-  init_timer.stop();
-  auto init_timings_fut = init_timer.reduce_timings();
-  upcxx::promise<> report_init_timings(1);
-
-
-  // we wish to have all ranks start at the same time to determine actual timing
-  first_barrier.start();
+  
   barrier();
-  first_barrier.stop();
-  when_all(report_init_timings.get_future(), init_entry_msm_fut, init_timings_fut, first_barrier.reduce_timings())
-      .then([](upcxx_utils::MinSumMax<double> entry_msm, upcxx_utils::ShTimings sh_timings,
-               upcxx_utils::ShTimings sh_first_barrier_timings) {
-        SLOG_VERBOSE("upcxx::init Before=", entry_msm.to_string(), "\n");
-        SLOG_VERBOSE("upcxx::init After=", sh_timings->to_string(), "\n");
-        SLOG_VERBOSE("upcxx::init FirstBarrier=", sh_first_barrier_timings->to_string(), "\n");
-      });
-  auto start_t = std::chrono::high_resolution_clock::now();
-  auto init_start_t = start_t;
-
+  
   // keep the exact command line arguments before options may have modified anything
   string executed = argv[0];
   executed += ".py";  // assume the python wrapper was actually called
@@ -94,10 +75,7 @@ int main(int argc, char **argv) {
   // if we don't load, return "command not found"
   if (!options->load(argc, argv)) return 127;
   SLOG_VERBOSE("Executed as: ", executed, "\n");
-  report_init_timings.fulfill_anonymous(1);
-
-  SLOG_VERBOSE(KLCYAN, "Timing reported as min/my/average/max, balance", KNORM, "\n");
-
+  
   ProgressBar::SHOW_PROGRESS = options->show_progress;
   auto max_kmer_store = options->max_kmer_store_mb * ONE_MB;
 
@@ -165,11 +143,8 @@ int main(int argc, char **argv) {
     for (auto const &reads_fname : options->reads_fnames) {
       packed_reads_list.push_back(new PackedReads(options->qual_offset, get_merged_reads_fname(reads_fname)));
     }
-    double elapsed_write_io_t = 0;
     
     // merge the reads and insert into the packed reads memory cache
-      
-    
     merge_reads(options->reads_fnames, options->qual_offset,  packed_reads_list, options->checkpoint_merged,
                   options->kmer_lens[0]);
       
@@ -179,9 +154,7 @@ int main(int argc, char **argv) {
       rlen_limit = max(rlen_limit, packed_reads->get_max_read_len());
       packed_reads->report_size();
     }
-
-    
-    
+   
     SLOG("\n");
     SLOG(KBLUE, "Completed initialization  at ", get_current_time(), " (",
          get_size_str(get_free_mem()), " free memory on node 0)", KNORM, "\n");
@@ -248,11 +221,9 @@ int main(int argc, char **argv) {
          get_size_str(get_free_mem()), " free memory on node 0)", KNORM, "\n");
 
     SLOG(KBLUE "_________________________", KNORM, "\n");
-    
-    SLOG(KBLUE "_________________________", KNORM, "\n");
     memory_tracker.stop();
-    std::chrono::duration<double> t_elapsed = std::chrono::high_resolution_clock::now() - start_t;
-    SLOG("Finished in ", setprecision(2), fixed, t_elapsed.count(), " s at ", get_current_time(), " for ", MHM2_VERSION, "\n");
+    
+    SLOG("Finished at ", get_current_time(), " for ", MHM2_VERSION, "\n");
 
   FastqReaders::close_all();
 
