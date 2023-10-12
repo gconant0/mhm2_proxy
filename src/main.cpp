@@ -250,17 +250,7 @@ int main(int argc, char **argv) {
          get_size_str(get_free_mem()), " free memory on node 0)", KNORM, "\n");
 
     SLOG(KBLUE "_________________________", KNORM, "\n");
-    SLOG("Stage timing:\n");
     
-    SLOG("    ", stage_timers.merge_reads->get_final(), "\n");
-    
-    SLOG("    ", stage_timers.analyze_kmers->get_final(), "\n");
-    SLOG("      -> ", stage_timers.kernel_kmer_analysis->get_final(), "\n");
-    SLOG("    ", stage_timers.dbjg_traversal->get_final(), "\n");
-    
-    SLOG("    FASTQ total read time: ", FastqReader::get_io_time(), "\n");
-    SLOG("    merged FASTQ write time: ", elapsed_write_io_t, "\n");
-    SLOG("    Contigs write time: ", stage_timers.dump_ctgs->get_elapsed(), "\n");
     SLOG(KBLUE "_________________________", KNORM, "\n");
     memory_tracker.stop();
     std::chrono::duration<double> t_elapsed = std::chrono::high_resolution_clock::now() - start_t;
