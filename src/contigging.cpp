@@ -41,10 +41,10 @@
 */
 
 #include "contigging.hpp"
-
 #include "kcount/kcount.hpp"
 #include "kmer_dht.hpp"
-#include "stage_timers.hpp"
+//#include "stage_timers.hpp"
+#include "upcxx_utils.hpp"
 
 using namespace upcxx;
 using namespace upcxx_utils;
@@ -109,7 +109,7 @@ void contigging(int kmer_len, int prev_kmer_len, int rlen_limit, vector<PackedRe
   if (options->ctgs_fname != uutigs_fname) {
     Kmer<MAX_K>::set_k(kmer_len);
     // duration of kmer_dht
-    stage_timers.analyze_kmers->start();
+    
     int64_t my_num_kmers = estimate_num_kmers(kmer_len, packed_reads_list);
     // use the max among all ranks
     my_num_kmers = reduce_all(my_num_kmers, op_fast_max).wait();
@@ -118,15 +118,13 @@ void contigging(int kmer_len, int prev_kmer_len, int rlen_limit, vector<PackedRe
     barrier();
     analyze_kmers(kmer_len, prev_kmer_len, options->qual_offset, packed_reads_list, options->dmin_thres, ctgs, kmer_dht,
                   options->dump_kmers);
-    stage_timers.analyze_kmers->stop();
+    
     barrier();
-    stage_timers.dbjg_traversal->start();
+    
     traverse_debruijn_graph(kmer_len, kmer_dht, ctgs);
-    stage_timers.dbjg_traversal->stop();
+    
     if (is_debug) {
-      stage_timers.dump_ctgs->start();
       ctgs.dump_contigs(uutigs_fname, 0);
-      stage_timers.dump_ctgs->stop();
     }
   }
 
@@ -148,10 +146,8 @@ void contigging(int kmer_len, int prev_kmer_len, int rlen_limit, vector<PackedRe
   }
   barrier();
   if (is_debug || options->checkpoint) {
-    stage_timers.dump_ctgs->start();
     string contigs_fname("contigs-" + to_string(kmer_len) + ".fasta");
     ctgs.dump_contigs(contigs_fname, 0);
-    stage_timers.dump_ctgs->stop();
   }
   SLOG(KBLUE "_________________________", KNORM, "\n");
   ctgs.print_stats(500);
