@@ -170,10 +170,9 @@ int main(int argc, char **argv) {
     
     // merge the reads and insert into the packed reads memory cache
       
-    stage_timers.merge_reads->start();
+    
     merge_reads(options->reads_fnames, options->qual_offset, elapsed_write_io_t, packed_reads_list, options->checkpoint_merged,
                   options->kmer_lens[0]);
-    stage_timers.merge_reads->stop();
       
     
     unsigned rlen_limit = 0;
@@ -183,9 +182,9 @@ int main(int argc, char **argv) {
     }
 
     
-    std::chrono::duration<double> init_t_elapsed = std::chrono::high_resolution_clock::now() - init_start_t;
+    
     SLOG("\n");
-    SLOG(KBLUE, "Completed initialization in ", setprecision(2), fixed, init_t_elapsed.count(), " s at ", get_current_time(), " (",
+    SLOG(KBLUE, "Completed initialization  at ", get_current_time(), " (",
          get_size_str(get_free_mem()), " free memory on node 0)", KNORM, "\n");
     int prev_kmer_len = options->prev_kmer_len;
     int ins_avg = 0;
