@@ -462,14 +462,13 @@ void FastqReader::advise(bool will_need) {
 // TODO
 #else
 #ifndef MHM2_NO_FADVISE
-  BaseTimer advise_t("Advise " + fname);
-  advise_t.start();
+  
   if (will_need) {
     posix_fadvise(fileno(f), start_read, end_read - start_read, POSIX_FADV_SEQUENTIAL);
-    LOG("advised ", fname, " POSIX_FADV_SEQUENTIAL in ", advise_t.get_elapsed_since_start(), "s\n");
+    LOG("advised ", fname, " POSIX_FADV_SEQUENTIAL\n");
   } else {
     posix_fadvise(fileno(f), start_read, end_read - start_read, POSIX_FADV_DONTNEED);
-    LOG("advised ", fname, " POSIX_FADV_DONTNEED in ", advise_t.get_elapsed_since_start(), "s\n");
+    LOG("advised ", fname, " POSIX_FADV_DONTNEED\n");
   }
 #else
   SLOG_VERBOSE("No posix_fadvice to ", fname, "\n");
