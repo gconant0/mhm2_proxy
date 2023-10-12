@@ -59,7 +59,7 @@ using namespace upcxx_utils;
 void init_devices();
 void done_init_devices();
 
-void merge_reads(vector<string> reads_fname_list, int qual_offset, 
+void merge_reads(vector<string> reads_fname_list, int qual_offset,
                  vector<PackedReads *> &packed_reads_list, bool checkpoint,  int min_kmer_len);
 
 int main(int argc, char **argv) {
@@ -244,9 +244,9 @@ int main(int argc, char **argv) {
 
     SLOG(KBLUE "_________________________", KNORM, "\n");
     ctgs.print_stats(options->min_ctg_print_len);
-    std::chrono::duration<double> fin_t_elapsed = std::chrono::high_resolution_clock::now() - fin_start_t;
+    
     SLOG("\n");
-    SLOG(KBLUE, "Completed finalization in ", setprecision(2), fixed, fin_t_elapsed.count(), " s at ", get_current_time(), " (",
+    SLOG(KBLUE, "Completed finalization at ", get_current_time(), " (",
          get_size_str(get_free_mem()), " free memory on node 0)", KNORM, "\n");
 
     SLOG(KBLUE "_________________________", KNORM, "\n");
