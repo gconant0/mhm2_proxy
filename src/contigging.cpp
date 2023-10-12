@@ -43,7 +43,6 @@
 #include "contigging.hpp"
 #include "kcount/kcount.hpp"
 #include "kmer_dht.hpp"
-//#include "stage_timers.hpp"
 #include "upcxx_utils.hpp"
 
 using namespace upcxx;
