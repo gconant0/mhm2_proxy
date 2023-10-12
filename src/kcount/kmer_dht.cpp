@@ -54,7 +54,6 @@
 #include "upcxx_utils/timers.hpp"
 #include "zstr.hpp"
 
-#include "stage_timers.hpp"
 #include "kmer_dht.hpp"
 
 using namespace std;
@@ -238,7 +237,6 @@ void KmerDHT<MAX_K>::finish_updates() {
   ht_inserter->insert_into_local_hashtable(local_kmers);
   double insert_time, kernel_time;
   ht_inserter->get_elapsed_time(insert_time, kernel_time);
-  stage_timers.kernel_kmer_analysis->inc_elapsed(kernel_time);
 }
 
 // one line per kmer, format:
