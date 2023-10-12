@@ -94,7 +94,7 @@ static uint64_t estimate_num_kmers(unsigned kmer_len, vector<PackedReads *> &pac
 template <int MAX_K>
 void contigging(int kmer_len, int prev_kmer_len, int rlen_limit, vector<PackedReads *> &packed_reads_list, Contigs &ctgs,
                 int &max_expected_ins_size, int &ins_avg, int &ins_stddev, shared_ptr<Options> options) {
-  auto loop_start_t = std::chrono::high_resolution_clock::now();
+  
   SLOG(KBLUE, "_________________________", KNORM, "\n");
   SLOG(KBLUE, "Contig generation k = ", kmer_len, KNORM, "\n");
   SLOG("\n");
