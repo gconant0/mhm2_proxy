@@ -249,8 +249,7 @@ FastqReader::FastqReader(const string &_fname, bool wait, upcxx::future<> first_
     , io_t("fastq IO for " + fname)
     , dist_prom(world())
     , open_fut(make_future()) {
-  Timer construction_timer("FastqReader construct " + get_basename(fname));
-  construction_timer.initiate_entrance_reduction();
+  
   string fname2;
   size_t pos;
   if ((pos = fname.find(':')) != string::npos) {
