@@ -227,7 +227,7 @@ using adapter_hash_table_t = HASH_TABLE<Kmer<MAX_ADAPTER_K>, vector<string>>;
 
 
 
-void merge_reads(vector<string> reads_fname_list, int qual_offset, double &elapsed_write_io_t,
+void merge_reads(vector<string> reads_fname_list, int qual_offset,
                  vector<PackedReads *> &packed_reads_list, bool checkpoint, int min_kmer_len) {
   BarrierTimer timer(__FILEFUNC__);
   Timer merge_time(__FILEFUNC__ + " merging all");
@@ -598,7 +598,6 @@ void merge_reads(vector<string> reads_fname_list, int qual_offset, double &elaps
   wrote_all_files_fut.wait();
 
   dump_reads_t.stop();
-  elapsed_write_io_t = dump_reads_t.get_elapsed();
   dump_reads_t.done();
 
   summary_promise.fulfill_anonymous(1);

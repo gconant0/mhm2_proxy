@@ -59,7 +59,7 @@ using namespace upcxx_utils;
 void init_devices();
 void done_init_devices();
 
-void merge_reads(vector<string> reads_fname_list, int qual_offset, double &elapsed_write_io_t,
+void merge_reads(vector<string> reads_fname_list, int qual_offset, 
                  vector<PackedReads *> &packed_reads_list, bool checkpoint,  int min_kmer_len);
 
 int main(int argc, char **argv) {
@@ -171,7 +171,7 @@ int main(int argc, char **argv) {
     // merge the reads and insert into the packed reads memory cache
       
     
-    merge_reads(options->reads_fnames, options->qual_offset, elapsed_write_io_t, packed_reads_list, options->checkpoint_merged,
+    merge_reads(options->reads_fnames, options->qual_offset,  packed_reads_list, options->checkpoint_merged,
                   options->kmer_lens[0]);
       
     
