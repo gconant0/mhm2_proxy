@@ -44,7 +44,6 @@
 
 #include "contigging.hpp"
 #include "fastq.hpp"
-#include "stage_timers.hpp"
 #include "upcxx_utils.hpp"
 #include "upcxx_utils/thread_pool.hpp"
 #include "utils.hpp"
@@ -238,10 +237,9 @@ int main(int argc, char **argv) {
 
     // output final assembly
     SLOG(KBLUE "_________________________", KNORM, "\n");
-    stage_timers.dump_ctgs->start();
+    
     ctgs.dump_contigs("final_assembly.fasta", options->min_ctg_print_len);
-    stage_timers.dump_ctgs->stop();
-
+   
     SLOG(KBLUE "_________________________", KNORM, "\n");
     ctgs.print_stats(options->min_ctg_print_len);
     
