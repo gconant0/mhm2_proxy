@@ -132,12 +132,8 @@ int main(int argc, char **argv) {
     // get total file size across all libraries
     double tot_file_size = 0;
     for (auto const &reads_fname : options->reads_fnames) {
-      auto spos = reads_fname.find_first_of(':');  // support paired reads
-      if (spos == string::npos) {
-        auto sz = get_file_size(reads_fname);
-        SLOG("Reads file ", reads_fname, " is ", get_size_str(sz), "\n");
-        tot_file_size += sz;
-      } else {
+        auto spos = reads_fname.find_first_of(':');  // support paired reads
+      
         // paired files
         auto r1 = reads_fname.substr(0, spos);
         auto s1 = get_file_size(r1);
@@ -145,7 +141,7 @@ int main(int argc, char **argv) {
         auto s2 = get_file_size(r2);
         SLOG("Paired files ", r1, " and ", r2, " are ", get_size_str(s1), " and ", get_size_str(s2), "\n");
         tot_file_size += s1 + s2;
-      }
+      
     }
     SOUT("Total size of ", options->reads_fnames.size(), " input file", (options->reads_fnames.size() > 1 ? "s" : ""), " is ",
          get_size_str(tot_file_size), "\n");
