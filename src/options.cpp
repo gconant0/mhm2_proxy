@@ -257,21 +257,13 @@ bool Options::load(int argc, char **argv) {
                             string(UPCXX_UTILS_VERSION) + " built on " + string(MHM2_BUILD_DATE);
   CLI::App app(full_version_str);
   // basic options - see user guide
-  app.add_option("-r, --reads", reads_fnames,
-                 "Files containing interleaved paired reads in FASTQ format (comma or space separated).")
-      ->delimiter(',')
-      ->check(CLI::ExistingFile);
+  
   app.add_option("-p, --paired-reads", paired_fnames,
                  "Alternating read files containing separate paired reads in FASTQ format (comma or space separated).")
       ->delimiter(',')
       ->check(CLI::ExistingFile);
-  app.add_option("-u, --unpaired-reads", unpaired_fnames, "Unpaired or single reads in FASTQ format (comma or space separated).")
-      ->delimiter(',')
-      ->check(CLI::ExistingFile);
-  app.add_option("-i, --insert", insert_size, "Insert size (average:stddev) (autodetected by default).")
-      ->delimiter(':')
-      ->expected(2)
-      ->check(CLI::Range(1, 10000));
+  
+ 
   auto *kmer_lens_opt = app.add_option("-k, --kmer-lens", kmer_lens, "kmer lengths (comma separated) for contigging.")
                             ->delimiter(',')
                             ->capture_default_str();
@@ -279,9 +271,7 @@ bool Options::load(int argc, char **argv) {
                                              "kmer lengths (comma separated) for scaffolding (set to 0 to disable scaffolding).")
                                   ->delimiter(',')
                                   ->capture_default_str();
-  app.add_option("--min-ctg-print-len", min_ctg_print_len, "Minimum length required for printing a contig in the final assembly.")
-      ->capture_default_str()
-      ->check(CLI::Range(0, 100000));
+
   auto *output_dir_opt = app.add_option("-o,--output", output_dir, "Output directory.")->capture_default_str();
   
  
