@@ -308,8 +308,7 @@ void merge_reads(vector<string> reads_fname_list, int qual_offset,
       if (!bytes_read2) break;
       bytes_read += bytes_read1 + bytes_read2;
       bases_read += seq1.length() + seq2.length();
-      progbar.update(bytes_read);
-
+     
       if (id1.compare(0, id1.length() - 2, id2, 0, id2.length() - 2) != 0) DIE("Mismatched pairs ", id1, " ", id2);
       if (id1[id1.length() - 1] != '1' || id2[id2.length() - 1] != '2') DIE("Mismatched pair numbers ", id1, " ", id2);
 
