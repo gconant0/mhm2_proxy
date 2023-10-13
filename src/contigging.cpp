@@ -68,17 +68,16 @@ static uint64_t estimate_num_kmers(unsigned kmer_len, vector<PackedReads *> &pac
     tot_num_reads += packed_reads->get_local_num_reads();
     packed_reads->reset();
     string id, seq, quals;
-    ProgressBar progbar(packed_reads->get_local_num_reads(), "Scanning reads to estimate number of kmers");
-
+   
     for (int i = 0; i < 100000; i++) {
       if (!packed_reads->get_next_read(id, seq, quals)) break;
-      progbar.update();
+     
       // do not read the entire data set for just an estimate
       if (seq.length() < kmer_len) continue;
       num_kmers += seq.length() - kmer_len + 1;
       num_reads++;
     }
-    progbar.done();
+    
     barrier();
   }
   DBG("This rank processed ", num_reads, " reads, and found ", num_kmers, " kmers\n");
