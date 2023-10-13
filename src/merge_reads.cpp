@@ -125,7 +125,6 @@ static pair<uint64_t, int> estimate_num_reads(vector<string> &reads_fname_list) 
       num_lines += 4;
       num_reads++;
       tot_bytes_read += bytes_read;
-      progbar.update(tot_bytes_read);
       records_processed++;
       // do not read the entire data set for just an estimate
       if (records_processed > 50000) break;
@@ -296,7 +295,6 @@ void merge_reads(vector<string> reads_fname_list, int qual_offset,
         int64_t bytes_read1 = fqr.get_next_fq_record(id1, seq1, quals1);
         if (!bytes_read1) break;
         bytes_read += bytes_read1;
-        progbar.update(bytes_read);
         packed_reads_list[ri]->add_read("r" + to_string(read_id) + "/1", seq1, quals1);
         packed_reads_list[ri]->add_read("r" + to_string(read_id) + "/2", "N", to_string((char)qual_offset));
         read_id += 2;
