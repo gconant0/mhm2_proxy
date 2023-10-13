@@ -129,11 +129,11 @@ int64_t FastqReader::get_fptr_for_next_record(int64_t offset) {
   // eof - do not read anything
   if (offset >= file_size) return file_size;
 
-  io_t.start();
+  
   if (fseek(f, offset, SEEK_SET) != 0) DIE("Could not fseek in ", fname, " to ", offset, ": ", strerror(errno));
   // skip first (likely partial) line after this offset to ensure we start at the beginning of a line
   if (!fgets(buf, BUF_SIZE, f)) {
-    io_t.stop();
+    
     return ftell(f);
   }
 
@@ -142,7 +142,7 @@ int64_t FastqReader::get_fptr_for_next_record(int64_t offset) {
   for (int i = 0;; i++) {
     int64_t this_tell = ftell(f);
     if (!fgets(buf, BUF_SIZE, f)) {
-      io_t.stop();
+      
       return ftell(f);
     }
 
@@ -234,7 +234,7 @@ int64_t FastqReader::get_fptr_for_next_record(int64_t offset) {
     }
     if (i > 20) DIE("Could not find a valid line in the fastq file ", fname, ", last line: ", buf);
   }
-  io_t.stop();
+  
   DBG("Found record at ", last_tell, " after offset ", offset, "\n");
   return last_tell;
 }
@@ -266,11 +266,11 @@ FastqReader::FastqReader(const string &_fname, bool wait, upcxx::future<> first_
   int fd = -1;
   if (!rank_me()) {
     // only one rank gets the file size, to prevent many hits on metadata
-    io_t.start();
+ 
     fd = open(fname.c_str(), O_RDONLY);
     if (fd < 0) DIE("Could not open file ", fname, ": ", strerror(errno));
     file_size = get_file_size(fd);
-    io_t.stop();
+    
   }
 
   future<> file_size_fut = upcxx::broadcast(file_size, 0).then([&file_size = this->file_size](int64_t sz) { file_size = sz; });
@@ -401,7 +401,7 @@ future<> FastqReader::set_matching_pair(FastqReader &fqr1, FastqReader &fqr2, di
 // all ranks open, 1 rank per node finds block boundaries
 upcxx::future<> FastqReader::continue_open(int fd) {
   assert(upcxx::master_persona().active_with_caller());
-  io_t.start();
+  
   if (fd < 0) {
     f = fopen(fname.c_str(), "r");
   } else {
@@ -410,8 +410,8 @@ upcxx::future<> FastqReader::continue_open(int fd) {
   if (!f) {
     SDIE("Could not open file ", fname, ": ", strerror(errno));
   }
-  LOG("Opened ", fname, " in ", io_t.get_elapsed_since_start(), "s.\n");
-  io_t.stop();
+  LOG("Opened ", fname, "\n");
+  
   if (rank_me() == 0) {
     // special for first rank set start as 0
     DBG_VERBOSE("setting 0 for rank 0\n");
@@ -479,13 +479,11 @@ void FastqReader::advise(bool will_need) {
 
 void FastqReader::seek() {
   // seek to first record
-  io_t.start();
+ 
   if (fseek(f, start_read, SEEK_SET) != 0) DIE("Could not fseek on ", fname, " to ", start_read, ": ", strerror(errno));
   SLOG_VERBOSE("Reading FASTQ file ", fname, "\n");
-  double fseek_t = io_t.get_elapsed_since_start();
-  io_t.stop();
-  LOG("Reading fastq file ", fname, " at pos ", start_read, " ", ftell(f), " seek ", fseek_t, "s io to open+find+seek ",
-      io_t.get_elapsed(), "s\n");
+  
+  LOG("Reading fastq file ", fname, " at pos ", start_read, " ", ftell(f), " seek io to open+find+seek \n");
 }
 
 FastqReader::~FastqReader() {
@@ -494,15 +492,12 @@ FastqReader::~FastqReader() {
     open_fut.wait();
   }
 
-  if (f) {
-    io_t.start();
+  if (f)
     fclose(f);
-    io_t.stop();
-  }
+    
   f = nullptr;
 
-  io_t.done_all_async();  // will print in Timings' order eventually
-  FastqReader::overall_io_t += io_t.get_elapsed();
+  
 }
 
 string FastqReader::get_fname() { return fname; }
@@ -524,7 +519,7 @@ size_t FastqReader::get_next_fq_record(string &id, string &seq, string &quals, b
     }
   }
   if (feof(f) || ftell(f) >= end_read) return 0;
-  io_t.start();
+
   size_t bytes_read = 0;
   id = "";
   char id2 = '\0';
@@ -554,7 +549,7 @@ size_t FastqReader::get_next_fq_record(string &id, string &seq, string &quals, b
     DIE("Invalid FASTQ in ", fname, ": sequence length ", seq.length(), " != ", quals.length(), " quals length\n", "id:   ", id,
         "\nseq:  ", seq, "\nquals: ", quals);
   if (seq.length() > max_read_len) max_read_len = seq.length();
-  io_t.stop();
+ 
   return bytes_read;
 }
 
@@ -568,11 +563,10 @@ void FastqReader::reset() {
   }
   if (!f) {
     DIE("Reset called on unopened file\n");
-  }
-  io_t.start();
+  };
   assert(f && "reset called on active file");
   if (fseek(f, start_read, SEEK_SET) != 0) DIE("Could not fseek on ", fname, " to ", start_read, ": ", strerror(errno));
-  io_t.stop();
+
   if (fqr2) fqr2->reset();
   first_file = true;
 }
