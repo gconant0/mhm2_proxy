@@ -56,7 +56,7 @@ using upcxx::promise;
 using upcxx::rank_me;
 using upcxx::rank_n;
 
-using upcxx_utils::IntermittentTimer;
+
 
 #define INT_CEIL(numerator, denominator) (((numerator)-1) / (denominator) + 1)
 #define BUF_SIZE 2047
