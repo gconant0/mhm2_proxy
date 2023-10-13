@@ -219,11 +219,6 @@ int16_t fast_count_mismatches(const char *a, const char *b, int len, int16_t max
   return mismatches;
 }
 
-#define MAX_ADAPTER_K 32
-
-// FIXME: don't store the string again for every kmer
-using adapter_hash_table_t = HASH_TABLE<Kmer<MAX_ADAPTER_K>, vector<string>>;
-
 
 
 
@@ -232,7 +227,6 @@ void merge_reads(vector<string> reads_fname_list, int qual_offset,
   BarrierTimer timer(__FILEFUNC__);
   Timer merge_time(__FILEFUNC__ + " merging all");
 
-  adapter_hash_table_t adapters;
   
   FastqReaders::open_all(reads_fname_list);
   vector<string> merged_reads_fname_list;
@@ -532,7 +526,7 @@ void merge_reads(vector<string> reads_fname_list, int qual_offset,
                                    reduce_one(bases_trimmed, op_fast_add, 0), reduce_one(reads_removed, op_fast_add, 0),
                                    reduce_one(bases_read, op_fast_add, 0));
     fut_summary = when_all(fut_summary, fut_reductions)
-                      .then([reads_fname, bytes_read, adapters](
+                      .then([reads_fname, bytes_read](
                                 int64_t all_num_pairs, int64_t all_num_merged, int64_t all_num_ambiguous, int64_t all_merged_len,
                                 int64_t all_overlap_len, int all_max_read_len, int64_t all_bases_trimmed, int64_t all_reads_removed,
                                 int64_t all_bases_read) {
@@ -542,10 +536,7 @@ void merge_reads(vector<string> reads_fname_list, int qual_offset,
                         SLOG_VERBOSE("  average merged length ", (double)all_merged_len / all_num_merged, "\n");
                         SLOG_VERBOSE("  average overlap length ", (double)all_overlap_len / all_num_merged, "\n");
                         SLOG_VERBOSE("  max read length ", all_max_read_len, "\n");
-                        if (!adapters.empty()) {
-                          SLOG_VERBOSE("  adapter bases trimmed ", perc_str(all_bases_trimmed, all_bases_read), "\n");
-                          SLOG_VERBOSE("  adapter reads removed ", perc_str(all_reads_removed, all_num_pairs * 2), "\n");
-                        }
+                        
                         SLOG_VERBOSE("  max read length ", all_max_read_len, "\n");
                         SLOG_VERBOSE("Total bytes read ", bytes_read, "\n");
                       });
