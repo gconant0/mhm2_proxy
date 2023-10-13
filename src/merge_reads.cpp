@@ -503,12 +503,7 @@ void merge_reads(vector<string> reads_fname_list, int qual_offset,
 
     fqr.advise(false);  // free kernel memory
 
-    if (checkpoint) {
-      // close this file, but do not wait for it yet
-      dump_reads_t.start();
-      wrote_all_files_fut = when_all(wrote_all_files_fut, sh_out_file->close_async());
-      dump_reads_t.stop();
-    }
+   
     auto prog_done = progbar.set_done();
     wrote_all_files_fut = when_all(wrote_all_files_fut, prog_done);
 
