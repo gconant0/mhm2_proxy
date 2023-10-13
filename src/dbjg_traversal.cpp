@@ -53,7 +53,6 @@
 #include "kcount.hpp"
 #include "kmer_dht.hpp"
 #include "upcxx_utils/log.hpp"
-#include "upcxx_utils/progress_bar.hpp"
 #include "upcxx_utils/reduce_prefix.hpp"
 #include "utils.hpp"
 
@@ -299,10 +298,9 @@ static void construct_frags(unsigned kmer_len, dist_object<KmerDHT<MAX_K>> &kmer
   WalkTermStats walk_term_stats = {0};
   int64_t num_walks = 0;
   barrier();
-  ProgressBar progbar(kmer_dht->get_local_num_kmers(), "DeBruijn graph traversal to construct uutig fragments");
   for (auto it = kmer_dht->local_kmers_begin(); it != kmer_dht->local_kmers_end(); it++) {
     progress();
-    progbar.update();
+    
     auto kmer = it->first;
     auto kmer_counts = &it->second;
     // don't start any new walk if this kmer has already been visited
@@ -325,7 +323,7 @@ static void construct_frags(unsigned kmer_len, dist_object<KmerDHT<MAX_K>> &kmer
     frag_elems.push_back(frag_elem_gptr);
     num_walks++;
   }
-  progbar.done();
+  
   barrier();
   auto tot_rank_me_rpcs = reduce_one(_num_rank_me_rpcs, op_fast_add, 0).wait();
   auto tot_node_rpcs = reduce_one(_num_node_rpcs, op_fast_add, 0).wait();
@@ -397,9 +395,8 @@ static void clean_frag_links(unsigned kmer_len, dist_object<KmerDHT<MAX_K>> &kme
   // put all the uutigs found by this rank into my_uutigs
   int64_t num_equal_links = 0, num_non_recip = 0, num_short = 0, num_left_links = 0, num_left_overlaps = 0,
           num_left_overlaps_rc = 0, num_right_links = 0, num_right_overlaps = 0, num_right_overlaps_rc = 0;
-  ProgressBar progbar(frag_elems.size(), "Cleaning fragment links");
+  
   for (auto frag_elem_gptr : frag_elems) {
-    progbar.update();
     FragElem *frag_elem = frag_elem_gptr.local();
     if (frag_elem->frag_len < kmer_len) {
       num_short++;
@@ -419,7 +416,7 @@ static void clean_frag_links(unsigned kmer_len, dist_object<KmerDHT<MAX_K>> &kme
     set_link_status(Dirn::RIGHT, frag_elem->right_gptr, frag_elem->right_is_rc, uutig, kmer_len, num_right_overlaps,
                     num_right_overlaps_rc, num_non_recip);
   }
-  progbar.done();
+  
   barrier();
   auto all_num_frags = reduce_one(frag_elems.size(), op_fast_add, 0).wait();
   auto all_num_short = reduce_one(num_short, op_fast_add, 0).wait();
@@ -522,9 +519,8 @@ static void connect_frags(unsigned kmer_len, dist_object<KmerDHT<MAX_K>> &kmer_d
                           Contigs &my_uutigs) {
   BarrierTimer timer(__FILEFUNC__);
   int64_t num_steps = 0, max_steps = 0, num_drops = 0, num_prev_visited = 0, num_repeats = 0;
-  ProgressBar progbar(frag_elems.size(), "Connecting fragments");
+  
   for (auto frag_elem_gptr : frag_elems) {
-    progbar.update();
     FragElem *frag_elem = frag_elem_gptr.local();
     if (frag_elem->frag_len < kmer_len) continue;
     if (frag_elem->visited) {
@@ -550,7 +546,7 @@ static void connect_frags(unsigned kmer_len, dist_object<KmerDHT<MAX_K>> &kmer_d
       num_drops++;
     }
   }
-  progbar.done();
+  
   auto all_num_steps = reduce_one(num_steps, op_fast_add, 0).wait();
   auto all_max_steps = reduce_one(max_steps, op_fast_max, 0).wait();
   auto all_num_drops = reduce_one(num_drops, op_fast_add, 0).wait();
@@ -591,12 +587,11 @@ void traverse_debruijn_graph(unsigned kmer_len, dist_object<KmerDHT<MAX_K>> &kme
   fut.wait();
   barrier();
 #ifdef DEBUG
-  ProgressBar progbar(my_uutigs.size(), "Checking kmers in uutigs");
+  
   for (auto uutig : my_uutigs) {
-    progbar.update();
     if (!check_kmers(uutig.seq, kmer_dht, kmer_len)) DIE("kmer not found in uutig");
   }
-  progbar.done();
+ 
 #endif
 }
 
