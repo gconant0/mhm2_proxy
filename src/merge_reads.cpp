@@ -483,19 +483,11 @@ void merge_reads(vector<string> reads_fname_list, int qual_offset,
 
         packed_reads_list[ri]->add_read("r" + to_string(read_id) + "/1", seq1, quals1);
         packed_reads_list[ri]->add_read("r" + to_string(read_id) + "/2", "N", to_string((char)qual_offset));
-        if (checkpoint) {
-          *sh_out_file << "@r" << read_id << "/1\n" << seq1 << "\n+\n" << quals1 << "\n";
-          *sh_out_file << "@r" << read_id << "/2\nN\n+\n" << (char)qual_offset << "\n";
-        }
       }
       if (!is_merged) {
         // write without the revcomp
         packed_reads_list[ri]->add_read("r" + to_string(read_id) + "/1", seq1, quals1);
         packed_reads_list[ri]->add_read("r" + to_string(read_id) + "/2", seq2, quals2);
-        if (checkpoint) {
-          *sh_out_file << "@r" << read_id << "/1\n" << seq1 << "\n+\n" << quals1 << "\n";
-          *sh_out_file << "@r" << read_id << "/2\n" << seq2 << "\n+\n" << quals2 << "\n";
-        }
       }
       // inc by 2 so that we can use a later optimization of treating the even as /1 and the odd as /2
       read_id += 2;
@@ -503,7 +495,6 @@ void merge_reads(vector<string> reads_fname_list, int qual_offset,
 
     fqr.advise(false);  // free kernel memory
 
-   
     auto prog_done = progbar.set_done();
     wrote_all_files_fut = when_all(wrote_all_files_fut, prog_done);
 
