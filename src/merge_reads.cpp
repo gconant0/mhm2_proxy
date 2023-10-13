@@ -264,13 +264,6 @@ void merge_reads(vector<string> reads_fname_list, int qual_offset,
     auto my_file_size = fqr.my_file_size();
     ProgressBar progbar(my_file_size, "Merging reads " + reads_fname + " " + get_size_str(fqr.my_file_size()));
 
-    shared_of sh_out_file;
-    if (checkpoint) {
-      auto merged_name = get_merged_reads_fname(reads_fname);
-      sh_out_file = make_shared<upcxx_utils::dist_ofstream>(merged_name);
-      all_outputs.push_back(sh_out_file);
-      merged_reads_fname_list.push_back(merged_name);
-    }
     int max_read_len = 0;
     int64_t overlap_len = 0;
     int64_t merged_len = 0;
@@ -307,10 +300,6 @@ void merge_reads(vector<string> reads_fname_list, int qual_offset,
         packed_reads_list[ri]->add_read("r" + to_string(read_id) + "/1", seq1, quals1);
         packed_reads_list[ri]->add_read("r" + to_string(read_id) + "/2", "N", to_string((char)qual_offset));
         read_id += 2;
-        if (checkpoint) {
-          *sh_out_file << "@r" << read_id << "/1\n" << seq1 << "\n+\n" << quals1 << "\n";
-          *sh_out_file << "@r" << read_id << "/2\nN\n+\n" << (char)qual_offset << "\n";
-        }
         continue;
       }
       int64_t bytes_read1 = fqr.get_next_fq_record(id1, seq1, quals1);
@@ -495,6 +484,7 @@ void merge_reads(vector<string> reads_fname_list, int qual_offset,
 
     fqr.advise(false);  // free kernel memory
 
+   
     auto prog_done = progbar.set_done();
     wrote_all_files_fut = when_all(wrote_all_files_fut, prog_done);
 
