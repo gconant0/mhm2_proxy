@@ -50,7 +50,6 @@
 #include <string>
 
 #include "upcxx_utils/log.hpp"
-#include "upcxx_utils/progress_bar.hpp"
 #include "upcxx_utils/promise_collectives.hpp"
 #include "upcxx_utils/thread_pool.hpp"
 #include "upcxx_utils/timers.hpp"
