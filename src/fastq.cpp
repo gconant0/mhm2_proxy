@@ -246,7 +246,6 @@ FastqReader::FastqReader(const string &_fname, bool wait, upcxx::future<> first_
     , fqr2(nullptr)
     , first_file(true)
     , _is_paired(true)
-    , io_t("fastq IO for " + fname)
     , dist_prom(world())
     , open_fut(make_future()) {
   
@@ -555,7 +554,6 @@ size_t FastqReader::get_next_fq_record(string &id, string &seq, string &quals, b
 
 int FastqReader::get_max_read_len() { return std::max(max_read_len, fqr2 ? fqr2->get_max_read_len() : 0u); }
 
-double FastqReader::get_io_time() { return overall_io_t; }
 
 void FastqReader::reset() {
   if (!open_fut.ready()) {

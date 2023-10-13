@@ -73,7 +73,6 @@ class FastqReader {
   shared_ptr<FastqReader> fqr2;
   bool first_file;
   bool _is_paired;
-  IntermittentTimer io_t;
   struct PromStartStop {
     promise<int64_t> start_prom, stop_prom;
     upcxx::future<> set(FastqReader &fqr) {
@@ -87,8 +86,7 @@ class FastqReader {
   upcxx::future<> open_fut;
   void seek();
 
-  inline static double overall_io_t = 0;
-
+  
   static void rtrim(string &s);
 
   bool get_fq_name(string &header);
@@ -113,7 +111,7 @@ class FastqReader {
   size_t get_next_fq_record(string &id, string &seq, string &quals, bool wait_open = true);
   int get_max_read_len();
 
-  double static get_io_time();
+  
 
   void reset();
 
