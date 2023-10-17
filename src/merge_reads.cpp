@@ -86,7 +86,7 @@ static pair<uint64_t, int> estimate_num_reads(vector<string> &reads_fname_list) 
   future<> progress_fut = make_future();
   future<> rpc_fut = make_future();
 
-  BarrierTimer timer(__FILEFUNC__);
+    barrier();
   FastqReaders::open_all(reads_fname_list);
 
   // Issue #61 - reduce the # of reading ranks to fix excessively long estimates on poor filesystems
@@ -155,7 +155,7 @@ static pair<uint64_t, int> estimate_num_reads(vector<string> &reads_fname_list) 
   progress_fut.wait();
   max_read_len = fut_max_read_len.wait();
   rpc_fut.wait();
-  timer.initate_exit_barrier();  // barrier ensures rpc_fut have all completed for next reduction
+    barrier();
   auto fut_max_estimate = reduce_all(*dist_est, op_fast_max);
   estimated_total_records = fut_max_estimate.wait();
   SLOG_VERBOSE("Found maximum read length of ", max_read_len, " and max estimated total ", estimated_total_records, " per rank\n");
@@ -223,9 +223,8 @@ int16_t fast_count_mismatches(const char *a, const char *b, int len, int16_t max
 
 void merge_reads(vector<string> reads_fname_list, int qual_offset,
                  vector<PackedReads *> &packed_reads_list, bool checkpoint, int min_kmer_len) {
-  BarrierTimer timer(__FILEFUNC__);
-  Timer merge_time(__FILEFUNC__ + " merging all");
-
+  
+    barrier();
   
   FastqReaders::open_all(reads_fname_list);
   vector<string> merged_reads_fname_list;
@@ -252,8 +251,7 @@ void merge_reads(vector<string> reads_fname_list, int qual_offset,
   future<> fut_summary = summary_promise.get_future();
   int ri = 0;
   for (auto const &reads_fname : reads_fname_list) {
-    Timer merge_file_timer("merging " + get_basename(reads_fname));
-    merge_file_timer.initiate_entrance_reduction();
+    
 
     string out_fname = get_merged_reads_fname(reads_fname);
     if (file_exists(out_fname)) SWARN("File ", out_fname, " already exists, will overwrite...");
@@ -518,8 +516,7 @@ void merge_reads(vector<string> reads_fname_list, int qual_offset,
     ri++;
     FastqReaders::close(reads_fname);
   }
-  merge_time.initiate_exit_reduction();
-
+  
   //#ifdef DEBUG
   // ensure there is no overlap in read_ids which will cause a crash later
   using SSPair = std::pair<uint64_t, uint64_t>;
@@ -567,5 +564,5 @@ void merge_reads(vector<string> reads_fname_list, int qual_offset,
   summary_promise.fulfill_anonymous(1);
   fut_summary.wait();
 
-  timer.initate_exit_barrier();
+    barrier();
 }
