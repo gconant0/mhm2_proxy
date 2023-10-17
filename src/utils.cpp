@@ -57,7 +57,7 @@
 
 #include "upcxx_utils/log.hpp"
 #include "upcxx_utils/ofstream.hpp"
-#include "upcxx_utils/timers.hpp"
+
 
 using namespace upcxx_utils;
 
@@ -167,7 +167,7 @@ void switch_orient(int &start, int &stop, int &len) {
 }
 
 void dump_single_file(const string &fname, const string &out_str, bool append) {
-  BarrierTimer timer(__FILEFUNC__);
+  barrier();
   SLOG_VERBOSE("Writing ", fname, "\n");
   SWARN("This is not the most efficient way to write a file anymore...\n");
   auto fut_tot_bytes_written = upcxx::reduce_one(out_str.size(), upcxx::op_fast_add, 0);

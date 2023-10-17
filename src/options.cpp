@@ -56,7 +56,6 @@
 #include "CLI11.hpp"
 #include "upcxx_utils/log.hpp"
 #include "upcxx_utils/mem_profile.hpp"
-#include "upcxx_utils/timers.hpp"
 #include "utils.hpp"
 #include "version.h"
 
@@ -271,7 +270,7 @@ bool Options::load(int argc, char **argv) {
                                              "kmer lengths (comma separated) for scaffolding (set to 0 to disable scaffolding).")
                                   ->delimiter(',')
                                   ->capture_default_str();
-
+  
   auto *output_dir_opt = app.add_option("-o,--output", output_dir, "Output directory.")->capture_default_str();
   
  
