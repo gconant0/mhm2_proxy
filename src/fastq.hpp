@@ -44,8 +44,7 @@
 
 #include <map>
 #include <upcxx/upcxx.hpp>
-
-#include "upcxx_utils/timers.hpp"
+#include "upcxx_utils/log.hpp"
 
 using std::shared_ptr;
 using std::string;
@@ -55,7 +54,7 @@ using upcxx::dist_object;
 using upcxx::promise;
 using upcxx::rank_me;
 using upcxx::rank_n;
-
+using upcxx::make_future;
 
 
 #define INT_CEIL(numerator, denominator) (((numerator)-1) / (denominator) + 1)
