@@ -52,7 +52,7 @@
 #include "upcxx_utils/log.hpp"
 #include "upcxx_utils/promise_collectives.hpp"
 #include "upcxx_utils/thread_pool.hpp"
-#include "upcxx_utils/timers.hpp"
+//#include "upcxx_utils/timers.hpp"
 #include "utils.hpp"
 
 using namespace upcxx_utils;
