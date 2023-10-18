@@ -277,7 +277,7 @@ bool Options::load(int argc, char **argv) {
   app.add_flag("--write-gfa", dump_gfa, "Write scaffolding contig graphs in GFA2 format.")->capture_default_str();
   app.add_flag("--dump-kmers", dump_kmers, "Write kmers out after kmer counting.")->capture_default_str();
   
-  app.add_flag("--progress", show_progress, "Show progress bars for operations.");
+  
   app.add_flag("-v, --verbose", verbose, "Verbose output: lots of detailed information (always available in the log).");
   auto *cfg_opt = app.set_config("--config", "", "Load options from a configuration file.");
 
