@@ -88,7 +88,8 @@ static pair<uint64_t, int> estimate_num_reads(vector<string> &reads_fname_list) 
 
     barrier();
   FastqReaders::open_all(reads_fname_list);
-
+  time_t mytime, finaltime;
+    intrank_t root =0;
   // Issue #61 - reduce the # of reading ranks to fix excessively long estimates on poor filesystems
   // only a few ranks need to estimate - local_team().rank_n() / 2 to nodes
   auto nodes = rank_n() / local_team().rank_n();
@@ -110,13 +111,20 @@ static pair<uint64_t, int> estimate_num_reads(vector<string> &reads_fname_list) 
   for (auto const &reads_fname : reads_fname_list) {
     // let multiple ranks handle multiple files
     if (rank_me() % modulo_rank != (read_file_idx++ % modulo_rank)) {
-      ProgressBar progbar((int64_t)0,
-                          "Scanning reads file to estimate number of reads");  // still do the collectives on progress bar...
-      progress_fut = when_all(progress_fut, progbar.set_done());
+        //GConant try to remove progress bar future
+        time(&mytime);
+        upcxx::future<> dummy_fut = upcxx::reduce_one(&mytime, &finaltime, 1, upcxx::op_fast_add, root, world());
+       // upcxx::future<> dummy_fut =abs(i);
+        
+      //ProgressBar progbar((int64_t)0,
+      //                    "Scanning reads file to estimate number of reads");  // still do the collectives on progress bar...
+      //progress_fut = when_all(progress_fut, progbar.set_done());
+        progress_fut = when_all(progress_fut, dummy_fut);
       continue;
     }
     FastqReader &fqr = FastqReaders::get(reads_fname);
-    ProgressBar progbar(fqr.my_file_size(), "Scanning reads file to estimate number of reads");
+   // ProgressBar progbar(fqr.my_file_size(), "Scanning reads file to estimate number of reads");
+   // ProgressBar progbar(fqr.my_file_size(), "Scanning reads file to estimate number of reads");
     size_t tot_bytes_read = 0;
     int64_t records_processed = 0;
     while (true) {
@@ -147,7 +155,12 @@ static pair<uint64_t, int> estimate_num_reads(vector<string> &reads_fname_list) 
           dist_est, num_records, read_file_idx - 1);
       rpc_fut = when_all(rpc_fut, fut_collect_rpc);
     }
-    progress_fut = when_all(progress_fut, progbar.set_done());
+    time(&mytime);
+    upcxx::future<> read_fut = upcxx::reduce_one(&mytime, &finaltime, 1, upcxx::op_fast_add, root, world());
+      
+      
+    //progress_fut = when_all(progress_fut, progbar.set_done());
+      progress_fut = when_all(progress_fut, read_fut);
     max_read_len = max(fqr.get_max_read_len(), max_read_len);
   }
   fut_max_read_len = reduce_all(max_read_len, op_fast_max);
@@ -250,6 +263,10 @@ void merge_reads(vector<string> reads_fname_list, int qual_offset,
   promise<> summary_promise;
   future<> fut_summary = summary_promise.get_future();
   int ri = 0;
+  
+    time_t mytime, finaltime;
+      intrank_t root =0;
+    
   for (auto const &reads_fname : reads_fname_list) {
     
 
@@ -259,7 +276,7 @@ void merge_reads(vector<string> reads_fname_list, int qual_offset,
     FastqReader &fqr = FastqReaders::get(reads_fname);
     fqr.advise(true);
     auto my_file_size = fqr.my_file_size();
-    ProgressBar progbar(my_file_size, "Merging reads " + reads_fname + " " + get_size_str(fqr.my_file_size()));
+    //ProgressBar progbar(my_file_size, "Merging reads " + reads_fname + " " + get_size_str(fqr.my_file_size()));
 
     int max_read_len = 0;
     int64_t overlap_len = 0;
@@ -479,10 +496,13 @@ void merge_reads(vector<string> reads_fname_list, int qual_offset,
 
     fqr.advise(false);  // free kernel memory
 
-   
-    auto prog_done = progbar.set_done();
-    wrote_all_files_fut = when_all(wrote_all_files_fut, prog_done);
-
+    time(&mytime);
+    upcxx::future<> final_fut = upcxx::reduce_one(&mytime, &finaltime, 1, upcxx::op_fast_add, root, world());
+    //auto prog_done = progbar.set_done();
+    //wrote_all_files_fut = when_all(wrote_all_files_fut, prog_done);
+      wrote_all_files_fut = when_all(wrote_all_files_fut, final_fut);
+      
+      
     tot_num_merged += num_merged;
     tot_num_ambiguous += num_ambiguous;
     tot_max_read_len = std::max(tot_max_read_len, max_read_len);
