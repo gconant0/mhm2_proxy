@@ -258,7 +258,7 @@ void merge_reads(vector<string> reads_fname_list, int qual_offset,
   // triple the block size estimate to be sure that we have no overlap. The read ids do not have to be contiguous
   uint64_t read_id = rank_me() * (max_num_reads + 10000) * 3;
   uint64_t start_read_id = read_id;
-  IntermittentTimer dump_reads_t("dump_reads");
+  //IntermittentTimer dump_reads_t("dump_reads");
   future<> wrote_all_files_fut = make_future();
   promise<> summary_promise;
   future<> fut_summary = summary_promise.get_future();
@@ -571,15 +571,15 @@ void merge_reads(vector<string> reads_fname_list, int qual_offset,
   //#endif
 
   // finish all file writing and report
-  dump_reads_t.start();
+  //dump_reads_t.start();
   wrote_all_files_fut.wait();
   for (auto sh_of : all_outputs) {
     wrote_all_files_fut = when_all(wrote_all_files_fut, sh_of->report_timings());
   }
   wrote_all_files_fut.wait();
 
-  dump_reads_t.stop();
-  dump_reads_t.done();
+  //dump_reads_t.stop();
+  //dump_reads_t.done();
 
   summary_promise.fulfill_anonymous(1);
   fut_summary.wait();
