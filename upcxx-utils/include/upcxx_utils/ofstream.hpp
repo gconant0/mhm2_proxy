@@ -120,8 +120,6 @@ class dist_ofstream_handle {
     AD &ad;
     global_ptr<uint64_t> global_offset;
     uint64_t count_async, count_collective, count_bytes, wrote_bytes;
-    IntermittentTimer io_t, network_latency_t;
-    std::chrono::time_point<std::chrono::high_resolution_clock> open_time, open_complete_time;
     vector<MinSumMax<uint64_t> > msm_metrics;
     upcxx::future<> opening_ops, pending_io_ops, pending_net_ops;
     const string fname;
@@ -145,7 +143,6 @@ class dist_ofstream_handle {
   AD &ad;
   global_ptr<uint64_t> &global_offset;  // for global file offset (i.e. async appending)
   uint64_t &count_async, &count_collective, &count_bytes, &wrote_bytes;
-  IntermittentTimer &io_t, &network_latency_t;
   upcxx::future<> &opening_ops, &pending_io_ops, &pending_net_ops;
   bool is_closed;
 
@@ -170,8 +167,7 @@ class dist_ofstream_handle {
   static upcxx::future<> report_timings(ShState sh_state);
 
   static double close_file_sync(ShState sh_state);
-  static void tear_down(ShState sh_state, double file_op_duration, double io_time, double net_time, double open_time,
-                        bool did_open);
+  static void tear_down(ShState sh_state,  bool did_open);
 
   static upcxx::future<> get_pending_ops(ShState sh_state);
 
