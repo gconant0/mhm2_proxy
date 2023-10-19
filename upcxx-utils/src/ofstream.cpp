@@ -6,7 +6,6 @@
 #include "upcxx_utils/binary_search.hpp"
 #include "upcxx_utils/log.hpp"
 #include "upcxx_utils/reduce_prefix.hpp"
-#include "upcxx_utils/timers.hpp"
 
 using upcxx::dist_object;
 using upcxx::rank_me;
@@ -98,10 +97,6 @@ dist_ofstream_handle::dist_ofstream_handle_state::dist_ofstream_handle_state(con
     , count_collective(0)
     , count_bytes(0)
     , wrote_bytes(0)
-    , io_t(_fname + " io")
-    , network_latency_t(_fname + " network latency")
-    , open_time()
-    , open_complete_time()
     , opening_ops(make_future())
     , pending_io_ops(make_future())
     , pending_net_ops(make_future())
@@ -126,8 +121,6 @@ dist_ofstream_handle::dist_ofstream_handle(const string _fname, const upcxx::tea
     , count_collective(sh_state->count_collective)
     , count_bytes(sh_state->count_bytes)
     , wrote_bytes(sh_state->wrote_bytes)
-    , io_t(sh_state->io_t)
-    , network_latency_t(sh_state->network_latency_t)
     , opening_ops(sh_state->opening_ops)
     , pending_net_ops(sh_state->pending_net_ops)
     , pending_io_ops(sh_state->pending_io_ops)
@@ -139,11 +132,11 @@ dist_ofstream_handle::dist_ofstream_handle(const string _fname, const upcxx::tea
   if (myteam.rank_me() == 0) {
     open_file_sync(sh_state, append);
     if (append) {
-      sh_state->io_t.start();
+      
       assert(sh_state->fd >= 0);
       pos = lseek(sh_state->fd, 0, SEEK_END);
-      LOG("Found pos = ", pos, " in appended file ", sh_state->fname, " in ", sh_state->io_t.get_elapsed_since_start(), " s\n");
-      sh_state->io_t.stop();
+      LOG("Found pos = ", pos, " in appended file ", sh_state->fname, "\n");
+      
       sh_state->last_known_tellp = pos;
     }
   }
@@ -151,12 +144,11 @@ dist_ofstream_handle::dist_ofstream_handle(const string _fname, const upcxx::tea
     sh_state->global_offset = upcxx::new_<uint64_t>(pos);
   }
 
-  sh_state->network_latency_t.start();
+  
   auto broadcast_global_offset_lambda = [sh_state = this->sh_state](global_ptr<uint64_t> global_offset) {
-    sh_state->network_latency_t.stop();
+    
     sh_state->global_offset = global_offset;
-    DBG_VERBOSE("dist_ofstream finished construction net=", sh_state->network_latency_t.get_elapsed(),
-                " io=", sh_state->io_t.get_elapsed(), "\n");
+    DBG_VERBOSE("dist_ofstream finished construction net\n");
   };
 
   // this is effectively a barrier for other ranks on rank0 opening the file
@@ -184,7 +176,7 @@ uint64_t dist_ofstream_handle::write_block(ShState sh_state, const char *src, ui
   if (len > 0) {
     assert(!sh_state->global_offset.is_null());
     if (!sh_state->is_open()) open_file_sync(sh_state);
-    sh_state->io_t.start();
+    
     assert(sh_state->fd >= 0);
     uint64_t wrote_bytes = 0;
     int attempts = 0;
@@ -203,8 +195,8 @@ uint64_t dist_ofstream_handle::write_block(ShState sh_state, const char *src, ui
       }
       wrote_bytes += bytes;
     }
-    LOG("Wrote ", len, " at ", file_offset, " to ", sh_state->fname, " in ", sh_state->io_t.get_elapsed_since_start(), " s\n");
-    sh_state->io_t.stop();
+    LOG("Wrote ", len, " at ", file_offset, " to ", sh_state->fname, "\n");
+
   }
   sh_state->wrote_bytes += len;
   return sh_state->last_known_tellp = file_offset + len;
@@ -247,7 +239,7 @@ uint64_t dist_ofstream_handle::write_block(ShState sh_state, ShSS sh_ss, uint64_
 
 void dist_ofstream_handle::open_file_sync(ShState sh_state, bool append) {
   if (sh_state->is_open()) return;
-  sh_state->open_time = std::chrono::high_resolution_clock::now();
+  
   int flags = O_WRONLY;  // TODO add O_DIRECT when caching is ready
   // rank 0 can create the file, others must see it already
   string tmpfname = sh_state->fname + ".tmp";
@@ -271,9 +263,9 @@ void dist_ofstream_handle::open_file_sync(ShState sh_state, bool append) {
   int mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
   sh_state->fd = open(tmpfname.c_str(), flags, mode);
   if (sh_state->fd < 0) DIE("Could not open ", tmpfname, "!", strerror(errno), "\n");
-  sh_state->open_complete_time = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> open_t = sh_state->open_complete_time - sh_state->open_time;
-  DBG("Opened ", tmpfname, " in ", open_t.count(), " s\n");
+  
+  
+  DBG("Opened ", tmpfname, "\n");
 }
 
 future<> dist_ofstream_handle::open_file(ShState sh_state, bool append) {
@@ -302,8 +294,7 @@ bool dist_ofstream_handle::is_open() const { return is_open_async().wait(); }
 
 string dist_ofstream_handle::get_file_name() const { return fname; }
 
-void dist_ofstream_handle::tear_down(ShState sh_state, double file_op_duration, double io_time, double net_time, double open_time,
-                                     bool did_open) {
+void dist_ofstream_handle::tear_down(ShState sh_state, bool did_open) {
   assert(sh_state->fd == -1);
   assert(sh_state->pending_net_ops.ready());
 
@@ -321,7 +312,7 @@ void dist_ofstream_handle::tear_down(ShState sh_state, double file_op_duration, 
   if (sh_state->myteam.rank_me() == 0) {
     // rename tmp back
     string tmpfname = sh_state->fname + ".tmp";
-    sh_state->io_t.start();
+    
     auto ret_un = unlink(sh_state->fname.c_str());  // ignore any error here
     DBG_VERBOSE("Unlinked ", sh_state->fname.c_str(), " (errors okay) ret=", ret_un, " ",
                 string(ret_un == 0 ? "" : strerror(errno)), "\n");
@@ -329,41 +320,29 @@ void dist_ofstream_handle::tear_down(ShState sh_state, double file_op_duration, 
     if (ret < 0) {
       DIE("Could not rename ", tmpfname, " to ", sh_state->fname, "! ", strerror(errno), "\n");
     }
-    LOG("Renamed back to ", sh_state->fname, " in ", sh_state->io_t.get_elapsed_since_start(), " s\n");
-    sh_state->io_t.stop();
+    LOG("Renamed back to ", sh_state->fname, "\n");
   }
 
-  double micro_s = 1000000.0;
+ 
   auto &msms = sh_state->msm_metrics;
-  assert(msms.size() == 7);
-  auto &msm_dur = msms[0];
-  msm_dur.reset(file_op_duration * micro_s);  // us
-  auto &msm_io = msms[1];
-  msm_io.reset(io_time * micro_s);  // us
-  auto &msm_net = msms[2];
-  msm_net.reset(net_time * micro_s);  // us
-  auto &msm_bytes = msms[3];
-  msm_bytes.reset(sh_state->count_bytes);
-  auto &msm_wrote = msms[4];
+  assert(msms.size() == 3);
+  
+  auto &msm_wrote = msms[0];
   msm_wrote.reset(sh_state->wrote_bytes);
-  auto &msm_had_io = msms[5];
+  auto &msm_had_io = msms[1];
   msm_had_io.reset(did_open);
-  auto &msm_open = msms[6];
-  msm_open.reset(open_time * micro_s);  // us
+  auto &msm_open = msms[2];
 }
 
 double dist_ofstream_handle::close_file_sync(ShState sh_state) {
   DBG_VERBOSE("Actually closing the fd: ", sh_state->fd, "\n");
   if (sh_state->fd < 0) return 0.0;
-  double file_op_duration = 0;
-  sh_state->io_t.start();
+  
+  
   close(sh_state->fd);
   sh_state->fd = -1;
-  LOG("Closed ", sh_state->fname, " in ", sh_state->io_t.get_elapsed_since_start(), " s\n");
-  sh_state->io_t.stop();
-  std::chrono::duration<double> interval = std::chrono::high_resolution_clock::now() - sh_state->open_time;
-  file_op_duration = interval.count();
-  return file_op_duration;
+  LOG("Closed ", sh_state->fname, "\n");
+  return 0.0;
 }
 
 future<> dist_ofstream_handle::close_file() {
@@ -389,13 +368,10 @@ future<> dist_ofstream_handle::close_file() {
     if (did_open) {
       file_op_duration = close_file_sync(sh_state);
     }
-    std::chrono::duration<double> open_t = sh_state->open_complete_time - sh_state->open_time;
-    auto open_time = open_t.count();
-    auto io_time = sh_state->io_t.get_elapsed();
-    auto net_time = sh_state->network_latency_t.get_elapsed();
+    
 
-    auto teardown_lamba_after_close = [sh_state, file_op_duration, io_time, net_time, open_time, did_open] {
-      tear_down(sh_state, file_op_duration, io_time, net_time, open_time, did_open);
+    auto teardown_lamba_after_close = [sh_state, did_open] {
+      tear_down(sh_state, did_open);
     };
 
     auto fut_stats_and_teardown = fut_all_closing.then(teardown_lamba_after_close);
@@ -418,16 +394,12 @@ future<> dist_ofstream_handle::report_timings(ShState sh_state) {
 
   auto report_timings_lambda = [sh_state, micro_s]() {
     auto &msms = sh_state->msm_metrics;
-    MinSumMax<double> msm_dur(msms[0], 1.0 / micro_s);
-    MinSumMax<double> msm_io(msms[1], 1.0 / micro_s);
-    MinSumMax<double> msm_net(msms[2], 1.0 / micro_s);
-    auto &msm_bytes = msms[3];
-    auto &msm_wrote = msms[4];
-    auto &msm_had_io = msms[5];
-    MinSumMax<double> msm_open(msms[6], 1.0 / micro_s);
+    auto &msm_bytes = msms[0];
+    auto &msm_wrote = msms[1];
+    auto &msm_had_io = msms[2];
+ 
 
-    LOG("Writing times: ", sh_state->fname, std::setprecision(4), std::fixed, " duration ", msm_dur.my, "s open ", msm_open.my,
-        "s io ", msm_io.my, "s net ", msm_net.my, "s ", "s bytes ", get_size_str(msm_bytes.my), " wrote ",
+    LOG("Writing times: ", sh_state->fname,  "s bytes ", get_size_str(msm_bytes.my), " wrote ",
         get_size_str(msm_wrote.my), "\n");
 
     if (!sh_state->myteam.rank_me()) {
@@ -435,16 +407,14 @@ future<> dist_ofstream_handle::report_timings(ShState sh_state) {
       assert(msm_bytes.sum == 0 || writers > 0);
       assert(writers <= sh_state->myteam.rank_n());
 
-      SLOG_VERBOSE("Wrote file ", sh_state->fname, std::setprecision(4), std::fixed, " (", get_size_str(msm_wrote.sum), ") in ",
-                   msm_dur.max, "s at ", get_size_str(msm_dur.max > 0 ? msm_bytes.sum / msm_dur.max : 0), "/s. ", writers,
-                   " writers, avg iops ", get_size_str(msm_io.sum > 0 ? msm_bytes.sum / msm_io.sum : 0), "/s ", "of ",
-                   get_size_str(msm_wrote.sum / msm_had_io.sum), "-", get_size_str(msm_wrote.max), " writes + ",
-                   msm_open.sum / msm_had_io.sum, "-", msm_open.max, "s to open.\n");
-      LOG("Write stats: duration ", msm_dur, ", open ", msm_open, " net latency ", msm_net, ", io ", msm_io, "\n");
+      SLOG_VERBOSE("Wrote file ", sh_state->fname, writers,
+                   " writers of ",
+                   get_size_str(msm_wrote.sum), "-", get_size_str(msm_wrote.max), " writes\n");
+      
     }
     LOG("Closed upcxx_utils::ofstream ", sh_state->fname, " with ", sh_state->count_bytes, " flushed bytes (",
         sh_state->wrote_bytes, " written) and ", sh_state->count_async, " async and ", sh_state->count_collective,
-        " collective operations ", sh_state->network_latency_t.get_final(), " ", sh_state->io_t.get_final(), "\n");
+        " collective operations\n");
   };
   auto fut = min_sum_max_reduce_one(msms.data(), msms.data(), msms.size(), 0, sh_state->myteam).then(report_timings_lambda);
   sh_state->pending_net_ops = when_all(sh_state->pending_net_ops, fut);
@@ -464,11 +434,11 @@ future<uint64_t> dist_ofstream_handle::append_batch_async(ShSS sh_ss) {
     auto fut_open = open_file(sh_state);
     return when_all(sh_state->pending_net_ops, fut_open)
         .then([sh_state, sh_ss, ss_size]() {
-          sh_state->network_latency_t.start();
+          
           return sh_state->ad.fetch_add(sh_state->global_offset, ss_size, std::memory_order_relaxed);
         })
         .then([sh_ss, sh_state](uint64_t write_offset) {
-          sh_state->network_latency_t.stop();
+          
           return write_block(sh_state, sh_ss, write_offset);
         });
   });
@@ -486,7 +456,7 @@ dist_ofstream_handle::OffsetPrefixes dist_ofstream_handle::getOffsetPrefixes(ShS
   // wait on other net_ops (like global_offset broadcast)
   sh_state->pending_net_ops.wait();
 
-  sh_state->network_latency_t.start();
+  
   uint64_t prefix = fut_prefix.wait();
 
   // open the file and get the base_offset
@@ -503,20 +473,17 @@ dist_ofstream_handle::OffsetPrefixes dist_ofstream_handle::getOffsetPrefixes(ShS
     global_start = sh_state->ad.fetch_add(sh_state->global_offset, global_size, std::memory_order_relaxed).wait();
 
     if (global_size) {
-      sh_state->network_latency_t.stop();
-
+     
       // truncate the file once the global_offset has been atomically changed
 
-      sh_state->io_t.start();
+      
       open_file_sync(sh_state);
       auto ret = ftruncate(sh_state->fd, global_start + global_size);
       if (ret != 0) {
         DIE("Could not ftruncate ", sh_state->fname, "! ", strerror(errno), "\n");
       }
-      LOG("truncated ", sh_state->fname, " to (", global_start, " + ", global_size, ") bytes in ",
-          sh_state->io_t.get_elapsed_since_start(), " s\n");
-      sh_state->io_t.stop();
-      sh_state->network_latency_t.start();
+      LOG("truncated ", sh_state->fname, " to (", global_start, " + ", global_size, ") bytes\n");
+      
     } else {
       // special case of 0 byte file write.  Rank 0 still needs to open it to later make an empty file
       DBG_VERBOSE("Opening what will be an empty file: ", sh_state->fname, "\n");
@@ -526,7 +493,6 @@ dist_ofstream_handle::OffsetPrefixes dist_ofstream_handle::getOffsetPrefixes(ShS
   }
   // this broadcast is effectively a barrier for the file to be truncated by rank 0
   upcxx::broadcast(global_start_size, 2, 0, sh_state->myteam).wait();
-  sh_state->network_latency_t.stop();
   assert(prefix >= my_size);
 
   OffsetPrefix global{global_start, global_size}, my{prefix - my_size, my_size};
@@ -663,14 +629,14 @@ future<> dist_ofstream_handle::write_blocked_batch_collective_finish(ShState sh_
                 " to another rank at start_block_offset=", obw.start_block_offset(), " in block# ", start_block,
                 " which starts at ", start_block * block_size, "\n");
 
-    sh_state->network_latency_t.start();
+    
     future<intrank_t> fut_find_rank = binary_search_rpc(*sh_dist_offset, start_block * block_size);
     fut_binary_search = fut_find_rank.then([sh_dist_offset, &obw, start_block, sh_state](intrank_t ignored) {
       if (ignored >= sh_dist_offset->team().rank_n()) {
         WARN("Did not find rank for start_block# ", start_block, " at ", start_block * obw.block_size, "\n");
       }
       DBG_VERBOSE("Finished binary search\n");
-      sh_state->network_latency_t.stop();
+      
     });
 
     // read and send the first bytes
