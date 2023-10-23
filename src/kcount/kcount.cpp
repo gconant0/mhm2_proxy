@@ -68,15 +68,14 @@ static void count_kmers(unsigned kmer_len, int qual_offset, vector<PackedReads *
   for (auto packed_reads : packed_reads_list) {
     tot_num_local_reads += packed_reads->get_local_num_reads();
   }
-  ProgressBar progbar(tot_num_local_reads, "Processing reads to count kmers");
-
+  
   for (auto packed_reads : packed_reads_list) {
     packed_reads->reset();
     string id, seq, quals;
     while (true) {
       if (!packed_reads->get_next_read(id, seq, quals)) break;
       num_reads++;
-      progbar.update();
+      
       if (seq.length() < kmer_len) continue;
       tot_read_len += seq.length();
       for (int i = 0; i < seq.length(); i++) {
@@ -90,7 +89,7 @@ static void count_kmers(unsigned kmer_len, int qual_offset, vector<PackedReads *
     }
   }
   seq_block_inserter.done_processing(kmer_dht);
-  progbar.done();
+  
   kmer_dht->flush_updates();
   auto all_num_reads = reduce_one(num_reads, op_fast_add, 0).wait();
   SLOG_VERBOSE("Processed a total of ", all_num_reads, " reads\n");
@@ -104,7 +103,7 @@ static void add_ctg_kmers(unsigned kmer_len, unsigned prev_kmer_len, Contigs &ct
   BarrierTimer timer(__FILEFUNC__);
   int64_t num_prev_kmers = kmer_dht->get_num_kmers();
 
-  ProgressBar progbar(ctgs.size(), "Adding extra contig kmers from kmer length " + to_string(prev_kmer_len));
+
   auto start_local_num_kmers = kmer_dht->get_local_num_kmers();
 
   SeqBlockInserter<MAX_K> seq_block_inserter(0, kmer_dht->get_minimizer_len());
@@ -126,14 +125,14 @@ static void add_ctg_kmers(unsigned kmer_len, unsigned prev_kmer_len, Contigs &ct
   //WARN("looping over ", ctgs.size(), " ctgs\n");
   for (auto it = ctgs.begin(); it != ctgs.end(); ++it) {
     auto ctg = it;
-    progbar.update();
+
     if (ctg->seq.length() < kmer_len + 2) continue;
     seq_block_inserter.process_seq(ctg->seq, ctg->get_uint16_t_depth(), kmer_dht);
   }
   DBG("after ctgs loop\n");
   //WARN("after ctgs loop\n");
   seq_block_inserter.done_processing(kmer_dht);
-  progbar.done();
+  
   kmer_dht->flush_updates();
   auto all_num_ctgs = reduce_one(ctgs.size(), op_fast_add, 0).wait();
   SLOG_VERBOSE("Processed a total of ", all_num_ctgs, " contigs\n");
