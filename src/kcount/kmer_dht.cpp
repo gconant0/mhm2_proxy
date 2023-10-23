@@ -251,7 +251,7 @@ void KmerDHT<MAX_K>::dump_kmers() {
   get_rank_path(dump_fname, rank_me());
   zstr::ofstream dump_file(dump_fname);
   ostringstream out_buf;
-  ProgressBar progbar(local_kmers->size(), "Dumping kmers to " + dump_fname);
+  //ProgressBar progbar(local_kmers->size(), "Dumping kmers to " + dump_fname);
   int64_t i = 0;
   for (auto &elem : *local_kmers) {
     out_buf << elem.first << " " << elem.second.count << " " << elem.second.left << " " << elem.second.right;
@@ -261,11 +261,11 @@ void KmerDHT<MAX_K>::dump_kmers() {
       dump_file << out_buf.str();
       out_buf = ostringstream();
     }
-    progbar.update();
+    //progbar.update();
   }
   if (!out_buf.str().empty()) dump_file << out_buf.str();
   dump_file.close();
-  progbar.done();
+  //progbar.done();
   SLOG_VERBOSE("Dumped ", this->get_num_kmers(), " kmers\n");
 }
 
