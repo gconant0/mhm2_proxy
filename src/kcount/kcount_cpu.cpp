@@ -527,8 +527,8 @@ void HashTableInserter<MAX_K>::insert_into_local_hashtable(dist_object<KmerMap<M
   SLOG_CPU_HT("Purged ", tot_num_purged, " kmers ( ", perc_str(tot_num_purged, tot_num_kmers), ")\n");
 }
 
-template <int MAX_K>
-void HashTableInserter<MAX_K>::get_elapsed_time(double &insert_time, double &kernel_time) {}
+//template <int MAX_K>
+//void HashTableInserter<MAX_K>::get_elapsed_time(double &insert_time, double &kernel_time) {}
 
 #define SEQ_BLOCK_INSERTER_K(KMER_LEN) template struct SeqBlockInserter<KMER_LEN>;
 #define HASH_TABLE_INSERTER_K(KMER_LEN) template class HashTableInserter<KMER_LEN>;

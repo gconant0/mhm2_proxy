@@ -125,7 +125,7 @@ class KmerDHT {
   int64_t max_kmer_store_bytes;
   int64_t my_num_kmers;
   int max_rpcs_in_flight;
-  std::chrono::time_point<std::chrono::high_resolution_clock> start_t;
+  //std::chrono::time_point<std::chrono::high_resolution_clock> start_t;
 
   int minimizer_len = 15;
 
