@@ -112,7 +112,7 @@ class HashTableInserter {
 
   void insert_into_local_hashtable(dist_object<KmerMap<MAX_K>> &local_kmers);
 
-  void get_elapsed_time(double &insert_time, double &kernel_time);
+  //void get_elapsed_time(double &insert_time, double &kernel_time);
 };
 
 template <int MAX_K>
