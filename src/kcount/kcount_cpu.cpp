@@ -489,7 +489,6 @@ void HashTableInserter<MAX_K>::flush_inserts() {
 
 template <int MAX_K>
 void HashTableInserter<MAX_K>::insert_into_local_hashtable(dist_object<KmerMap<MAX_K>> &local_kmers) {
-  BarrierTimer timer(__FILEFUNC__);
   int64_t num_good_kmers = state->kmers->size();
   state->kmers->begin_iterate();
   while (true) {
