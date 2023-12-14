@@ -51,7 +51,7 @@
 #include "upcxx_utils/log.hpp"
 #include "upcxx_utils/mem_profile.hpp"
 
-#include "upcxx_utils/timers.hpp"
+//#include "upcxx_utils/timers.hpp"
 #include "zstr.hpp"
 
 #include "kmer_dht.hpp"
@@ -279,11 +279,11 @@ typename KmerMap<MAX_K>::iterator KmerDHT<MAX_K>::local_kmers_end() {
   return local_kmers->end();
 }
 
-template <int MAX_K>
-int32_t KmerDHT<MAX_K>::get_time_offset_us() {
-  std::chrono::duration<double> t_elapsed = CLOCK_NOW() - start_t;
-  return std::chrono::duration_cast<std::chrono::microseconds>(t_elapsed).count();
-}
+//template <int MAX_K>
+//int32_t KmerDHT<MAX_K>::get_time_offset_us() {
+//  std::chrono::duration<double> t_elapsed = CLOCK_NOW() - start_t;
+//  return std::chrono::duration_cast<std::chrono::microseconds>(t_elapsed).count();
+//}
 
 #define KMER_DHT_K(KMER_LEN) template class KmerDHT<KMER_LEN>
 

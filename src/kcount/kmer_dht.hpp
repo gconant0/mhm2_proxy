@@ -168,5 +168,5 @@ class KmerDHT {
 
   typename KmerMap<MAX_K>::iterator local_kmers_end();
 
-  int32_t get_time_offset_us();
+//  int32_t get_time_offset_us();
 };
