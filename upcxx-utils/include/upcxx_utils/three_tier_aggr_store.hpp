@@ -1002,7 +1002,8 @@ class ThreeTierAggrStore : public FlatAggrStore<T, Data...> {
       }
     }  // else no micro_stores
 
-    BarrierTimer bt1(splits->thread_team(), "ThreeTierAggrStore::flush_updates - local append updates - " + this->description);
+      upcxx::barrier(splits->thread_team());
+    
 
     DBG("3TAS::flush_updates sending node stores\n");
     // now call update_remote for any tt_store owned by this rank
@@ -1044,7 +1045,8 @@ class ThreeTierAggrStore : public FlatAggrStore<T, Data...> {
       return;
     } else {
       // must wait for other ranks in the thread team to send their node stores
-      BarrierTimer bt2a(splits->thread_team(), "ThreeTierAggrStore::flush_updates wait first flush - " + this->description);
+        upcxx::barrier(splits->thread_team());
+      
     }
     // tell the target node how many rpcs this thread_team() has sent to it
     for (node_num_t i = 0; !flat_mode && i < splits->node_n(); i++) {
@@ -1075,16 +1077,17 @@ class ThreeTierAggrStore : public FlatAggrStore<T, Data...> {
       }
     }
     auto fut_done = flush_outstanding_futures_async();
-      int j=0;
-    while (!fut_done.ready()) {
-        j+=0;
+      fut_done.wait()
+      //int j=0;
+    //while (!fut_done.ready()) {
+       // j+=0;
         
-    }
+    //}
 
     DBG("Waiting for quiescence of counts\n");
 
-    BarrierTimer bt2(splits->full_team(), "ThreeTierAggrStore::flush_updates - quiescence - " + this->description);
-
+      upcxx::barrier(splits->full_team());
+    
     auto max_updates_fut = upcxx::reduce_all(tt_updates, op_fast_max, splits->full_team());
     auto sum_updates_fut = upcxx::reduce_all(tt_updates, op_fast_add, splits->full_team());
 
