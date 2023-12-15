@@ -31,7 +31,7 @@ foreach(TEMPLATE_TYPE float double int uint64_t int64_t)
   endforeach()
 endforeach()
 
-set(upcxx_utils_libs log timers flat_aggr_store two_tier_aggr_store three_tier_aggr_store split_rank 
+set(upcxx_utils_libs log timers flat_aggr_store three_tier_aggr_store split_rank 
                      mem_profile ofstream binary_search reduce_prefix shared_array limit_outstanding promise_collectives
                      thread_pool gasnetvars
                      ${EXTERN_TEMPLATE_FILES}
