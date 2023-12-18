@@ -484,7 +484,7 @@ void FastqReader::seek() {
 }
 
 FastqReader::~FastqReader() {
-  if (!open_fut.ready()) {
+  if (!open_fut.is_ready()) {
     WARN("Destructor called before opening completed\n");
     open_fut.wait();
   }
@@ -502,7 +502,7 @@ string FastqReader::get_fname() { return fname; }
 size_t FastqReader::my_file_size() { return end_read - start_read + (fqr2 ? fqr2->my_file_size() : 0); }
 
 size_t FastqReader::get_next_fq_record(string &id, string &seq, string &quals, bool wait_open) {
-  if (wait_open && !open_fut.ready()) {
+  if (wait_open && !open_fut.is_ready()) {
     WARN("Attempt to read ", fname, " before it is ready. wait on open_fut first to avoid this warning!\n");
     open_fut.wait();
   }
@@ -554,7 +554,7 @@ int FastqReader::get_max_read_len() { return std::max(max_read_len, fqr2 ? fqr2-
 
 
 void FastqReader::reset() {
-  if (!open_fut.ready()) {
+  if (!open_fut.is_ready()) {
     open_fut.wait();
   }
   if (!f) {

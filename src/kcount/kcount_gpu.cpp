@@ -101,7 +101,7 @@ static void process_block(SeqBlockInserter<MAX_K> *seq_block_inserter, dist_obje
   state->num_block_calls++;
   future<bool> fut = execute_in_thread_pool(
       [&state, &num_valid_kmers] { return state->pnp_gpu_driver->process_seq_block(state->seq_block, num_valid_kmers); });
-  while (!fut.ready()) {
+  while (!fut.is_ready()) {
     state->num_pnp_gpu_waits++;
     progress();
   }

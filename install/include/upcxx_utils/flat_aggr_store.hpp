@@ -469,7 +469,7 @@ class FlatAggrStore {
       do {
         rpc_counts->progress_timer.progress();  // call progress after firing a rpc
         fut = limit_outstanding_futures(fut);
-      } while (!fut.ready());
+      } while (!fut.is_ready());
     }
 
     CountType max_vals[2], sum_vals[2];
@@ -478,7 +478,7 @@ class FlatAggrStore {
 
     DBG("flush_updates() waiting for counts\n");
     auto fut_done = flush_outstanding_futures_async();
-    while (!fut_done.ready()) {
+    while (!fut_done.is_ready()) {
       rpc_counts->progress_timer.discharge();
     }
 

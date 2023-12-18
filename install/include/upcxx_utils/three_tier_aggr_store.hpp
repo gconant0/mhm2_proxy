@@ -1080,11 +1080,11 @@ class ThreeTierAggrStore : public FlatAggrStore<T, Data...> {
         do {
           tt_rpc_counts->progress_timer.progress();  // call progress after firing a rpc
           fut = limit_outstanding_futures(fut);
-        } while (!fut.ready());
+        } while (!fut.is_ready());
       }
     }
     auto fut_done = flush_outstanding_futures_async();
-    while (!fut_done.ready()) {
+    while (!fut_done.is_ready()) {
       tt_rpc_counts->progress_timer.discharge();
     }
 

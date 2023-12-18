@@ -225,7 +225,7 @@ upcxx::future<> binomial_gather(const T* send_buf, size_t send_count, T* dest_bu
     if (is_sending) {
       DBG_VERBOSE("is sending level=", level, "\n");
       assert(!is_receiving && "sending is not also receiving");
-      assert(!workflow.prom_buffer_filled.get_future().ready() && "sending buffer has not been filled before workflow is prepared");
+      assert(!workflow.prom_buffer_filled.get_future().is_ready() && "sending buffer has not been filled before workflow is prepared");
       if (!have_received) {
         assert(send_buf);
         assert(send_count != 0);
@@ -280,11 +280,11 @@ upcxx::future<> binomial_gather(const T* send_buf, size_t send_count, T* dest_bu
         DBG_VERBOSE("Sent rpc to dest_rrank=", dest_rrank, ", dest_rank=", dest_rank, " rrank=", rrank, " level=", level,
                     " count=", sending_size, " ", get_size_str(sending_size * sizeof(T)), "\n");
         // make buffer available for next level (may never be needed but steps workflow to completion)
-        assert(!workflow.prom_buffer_filled.get_future().ready() && "sending buffer that was just used has not been filled yet");
+        assert(!workflow.prom_buffer_filled.get_future().is_ready() && "sending buffer that was just used has not been filled yet");
         workflow.prom_buffer_filled.fulfill_anonymous(1);
       });
       if (!have_received)
-        assert(fut.ready() &&
+        assert(fut.is_ready() &&
                "first sending level always immediately executes ensuring send_buf is ready for reuse on exit of binomial_gather");
       have_sent = true;
       // not done until I have sent my message
@@ -295,7 +295,7 @@ upcxx::future<> binomial_gather(const T* send_buf, size_t send_count, T* dest_bu
     if (!is_sending & !is_receiving) {
       // some ranks on some levels have nothing to do but make the buffer available
       DBG_VERBOSE("idle level=", level, "\n");
-      assert(!workflow.prom_buffer_filled.get_future().ready());
+      assert(!workflow.prom_buffer_filled.get_future().is_ready());
       workflow.prom_buffer_filled.fulfill_anonymous(1);
       if (!have_received && !have_sent) workflow.prom_buffer.fulfill_result(ShBuffer());
     }
@@ -309,7 +309,7 @@ upcxx::future<> binomial_gather(const T* send_buf, size_t send_count, T* dest_bu
                        LevelWorkflow& next = dist_workflows->level(level + 1);
                        DBG_VERBOSE("Setting buffer for next level: ", level + 1, " size=", sh_buf->size(),
                                    " cap=", sh_buf->capacity(), "\n");
-                       if (!next.prom_buffer.get_future().ready()) {
+                       if (!next.prom_buffer.get_future().is_ready()) {
                          // fulfill buffer for next level on this rank for it to send or recv
                          next.prom_buffer.fulfill_result(std::move(sh_buf));
                        } else {

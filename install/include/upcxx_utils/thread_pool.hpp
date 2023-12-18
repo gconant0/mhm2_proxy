@@ -94,7 +94,7 @@ class ThreadPool {
   template <typename Func, class... Args>
   static upcxx::future<> &enqueue_in_single_pool_serially(upcxx::future<> &serial_fut, Func &&func, Args &&... args) {
     assert(upcxx::master_persona().active_with_caller() && "Called from master persona");
-    DBG_VERBOSE("enqueue_in_single_pool_serially: ", &serial_fut, " ", (serial_fut.ready() ? "ready" : "NOT READY"), "\n");
+    DBG_VERBOSE("enqueue_in_single_pool_serially: ", &serial_fut, " ", (serial_fut.is_ready() ? "ready" : "NOT READY"), "\n");
 
     using return_t = typename std::invoke_result<Func, Args...>::type;
     static_assert(std::is_void<return_t>::value, "void is the required return type for enqueue_in_serial_pool");
