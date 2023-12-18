@@ -76,7 +76,6 @@ int main(int argc, char **argv) {
   if (!options->load(argc, argv)) return 127;
   SLOG_VERBOSE("Executed as: ", executed, "\n");
   
-  //ProgressBar::SHOW_PROGRESS = options->show_progress;
   auto max_kmer_store = options->max_kmer_store_mb * ONE_MB;
 
   SLOG_VERBOSE("Process 0 on node 0 is initially pinned to ", get_proc_pin(), "\n");
@@ -229,7 +228,7 @@ int main(int argc, char **argv) {
 
 
   upcxx_utils::ThreadPool::join_single_pool();  // cleanup singleton thread pool
-  upcxx_utils::Timings::wait_pending();         // ensure all outstanding timing summaries have printed
+  //upcxx_utils::Timings::wait_pending();         // ensure all outstanding timing summaries have printed
   barrier();
 
 #ifdef DEBUG
