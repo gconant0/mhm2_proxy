@@ -68,7 +68,6 @@ void init_devices() {
 
 void done_init_devices() {
   if (init_gpu_thread) {
-    Timer t("Waiting for GPU to be initialized (should be noop)");
     init_gpu_thread = false;
     detect_gpu_fut.wait();
     if (gpu_utils::gpus_present()) {
