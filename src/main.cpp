@@ -50,6 +50,10 @@
 
 #include "kmer.hpp"
 
+#ifdef ENABLE_KOKKOS
+#include <Kokkos_Core.hpp>
+#endif
+
 using std::fixed;
 using std::setprecision;
 
@@ -63,6 +67,9 @@ void merge_reads(vector<string> reads_fname_list, int qual_offset,
 
 int main(int argc, char **argv) {
   
+  #ifdef ENABLE_KOKKOS
+  Kokkos::initialize(argc, argv);
+  #endif
   upcxx::init();
   
   barrier();
@@ -237,5 +244,8 @@ int main(int argc, char **argv) {
     ;
 #endif
   upcxx::finalize();
+  #ifdef ENABLE_KOKKOS
+  Kokkos::finalize();
+  #endif
   return 0;
 }
