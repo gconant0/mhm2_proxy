@@ -24,6 +24,9 @@
  *
  */
 
+#include <array>
+#include <string>
+
 #ifdef CONFIG_USE_COLORS
 
 #define KNORM "\x1B[0m"

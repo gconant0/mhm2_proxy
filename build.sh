@@ -48,7 +48,7 @@ else
     if [ "$1" == "Debug" ] || [ "$1" == "Release" ] || [ "$1" == "RelWithDebInfo" ]; then
         rm -rf *
         rm -rf $INSTALL_PATH/cmake
-        cmake $rootdir -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=$1 -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH \
+        cmake $rootdir -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=$1 -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH -DCMAKE_CXX_COMPILER=mpicxx \
               -DMHM2_ENABLE_TESTING=0 $MHM2_CMAKE_EXTRAS $2
         #-DENABLE_CUDA=0
     fi

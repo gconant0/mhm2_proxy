@@ -425,7 +425,7 @@ upcxx::future<> reduce_prefix_binary_tree_up(ShDistData<T, BinaryOp> sh_dist_dat
           // scratch has partial_to_parent from right (j+1 ... rr) if there is a right
           // if there is a left child, dst already has applied from left (ll ... j)
           // calculate partial_to_parent as (ll ... rr) in scratch.
-          assert(proms.scratch_is_partial_right.get_future().ready());
+          assert(proms.scratch_is_partial_right.get_future().is_ready());
 
           if (my_node.right < my_node.n) {
             assert(!sh_scratch->empty());
@@ -433,7 +433,7 @@ upcxx::future<> reduce_prefix_binary_tree_up(ShDistData<T, BinaryOp> sh_dist_dat
           T *partial_right = sh_scratch->data();
           T *partial_left_right = sh_scratch->data();
 
-          assert(proms.dst_is_partial_left_me.get_future().ready());
+          assert(proms.dst_is_partial_left_me.get_future().is_ready());
           const T *partial_left_me = my_node.left < my_node.me ? dst : src;
           const T *send_to_parent = partial_left_me;
 
@@ -512,11 +512,11 @@ upcxx::future<> reduce_prefix_binary_tree_down(ShDistData<T, BinaryOp> sh_dist_d
   }
 
   // check that upstage is completed
-  assert(proms.ready_for_up.get_future().ready());
-  assert(proms.dst_is_partial_left_me.get_future().ready());
-  assert(proms.scratch_is_partial_right.get_future().ready());
-  assert(proms.scratch_is_partial_to_parent.get_future().ready());
-  assert(proms.sent_partial_to_parent.get_future().ready());
+  assert(proms.ready_for_up.get_future().is_ready());
+  assert(proms.dst_is_partial_left_me.get_future().is_ready());
+  assert(proms.scratch_is_partial_right.get_future().is_ready());
+  assert(proms.scratch_is_partial_to_parent.get_future().is_ready());
+  assert(proms.sent_partial_to_parent.get_future().is_ready());
 
   // step 4 down
   // receive from parent
@@ -555,7 +555,7 @@ upcxx::future<> reduce_prefix_binary_tree_down(ShDistData<T, BinaryOp> sh_dist_d
     rpcs_sent = rpcs_sent.then(
         [sh_dist_data, dst = dst, count = count, sh_scratch = sh_scratch, child, my_node = my_node, &proms, &team]() {
           assert(proms.up_ready());
-          assert(proms.scratch_is_partial_from_parent.get_future().ready());
+          assert(proms.scratch_is_partial_from_parent.get_future().is_ready());
           const T *send_data;
           if (child < my_node.me) {
             // relay just a copy from my parent (0 ... ll-1)

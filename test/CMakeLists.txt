@@ -21,6 +21,8 @@ file(
   LIST_DIRECTORIES false
   *.hpp *.cpp)
 
+list(FILTER TEST_SOURCES EXCLUDE REGEX "ssw-test\\.cpp$")
+
 set(SOURCES ${TEST_SOURCES})
 
 include_directories("${CMAKE_SOURCE_DIR}/src")
