@@ -23,7 +23,7 @@ upcxx::future<> upcxx_utils::collapse_outstanding_futures(int limit, LimitedFutu
     while (outstanding_queue.size() > limit) {
       auto fut = outstanding_queue.front();
       outstanding_queue.pop_front();
-      if (!fut.is_ready()) returned_future = upcxx::when_all(fut, returned_future);
+      if (!fut.ready()) returned_future = upcxx::when_all(fut, returned_future);
     }
     DBG("limit=", limit, " outstanding=", outstanding_queue.size(), " max_check=", max_check, "\n");
     if (limit == 0) {
@@ -31,24 +31,24 @@ upcxx::future<> upcxx_utils::collapse_outstanding_futures(int limit, LimitedFutu
     } else {
       assert(outstanding_queue.size() <= limit);
       int i = 0;
-      while (i < max_check && !returned_future.is_ready() && i < outstanding_queue.size()) {
+      while (i < max_check && !returned_future.ready() && i < outstanding_queue.size()) {
         // find a ready future in the queue to swap with
         auto &test_fut = outstanding_queue[i++];
-        if (test_fut.is_ready()) {
+        if (test_fut.ready()) {
           std::swap(test_fut, returned_future);
-          assert(returned_future.is_ready());
+          assert(returned_future.ready());
           break;
         }
       }
     }
   }
-  DBG("limit=", limit, " outstanding=", outstanding_queue.size(), " max_check=", max_check, ", ret=", returned_future.is_ready(),
+  DBG("limit=", limit, " outstanding=", outstanding_queue.size(), " max_check=", max_check, ", ret=", returned_future.ready(),
       "\n");
   return returned_future;
 }
 
 void upcxx_utils::add_outstanding_future(upcxx::future<> fut, LimitedFutureQueue &outstanding_queue) {
-  if (!fut.is_ready()) outstanding_queue.push_back(fut);
+  if (!fut.ready()) outstanding_queue.push_back(fut);
 }
 
 upcxx::future<> upcxx_utils::limit_outstanding_futures(int limit, LimitedFutureQueue &outstanding_queue) {
@@ -62,7 +62,7 @@ upcxx::future<> upcxx_utils::limit_outstanding_futures(upcxx::future<> fut, int 
     if (outstanding_queue.empty()) return fut;
     return upcxx::when_all(collapse_outstanding_futures(limit, outstanding_queue), fut);
   }
-  if (fut.is_ready()) {
+  if (fut.ready()) {
     if (outstanding_queue.size() <= limit) return fut;
   } else {
     outstanding_queue.push_back(fut);

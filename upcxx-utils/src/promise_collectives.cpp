@@ -115,14 +115,14 @@ upcxx_utils::PromiseBarrier::~PromiseBarrier() {
   DBG_VERBOSE("Destroy this=", this, " move=", moved, "\n");
   if (moved) return;  // invalidated
   assert(upcxx::master_persona().active_with_caller());
-  assert(dist_workflow->initiated_prom.get_future().is_ready());
+  assert(dist_workflow->initiated_prom.get_future().ready());
   get_future().wait();
 }
 
 void upcxx_utils::PromiseBarrier::fulfill() const {
   DBG_VERBOSE("fulfill this=", this, "\n");
   assert(upcxx::master_persona().active_with_caller());
-  assert(!dist_workflow->initiated_prom.get_future().is_ready());
+  assert(!dist_workflow->initiated_prom.get_future().ready());
   dist_workflow->initiated_prom.fulfill_anonymous(1);
 }
 

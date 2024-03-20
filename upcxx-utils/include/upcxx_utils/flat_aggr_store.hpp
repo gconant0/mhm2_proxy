@@ -466,7 +466,7 @@ class FlatAggrStore {
       do {
        
         fut = limit_outstanding_futures(fut);
-      } while (!fut.is_ready());
+      } while (!fut.ready());
     }
 
     CountType max_vals[2], sum_vals[2];

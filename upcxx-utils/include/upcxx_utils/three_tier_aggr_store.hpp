@@ -1073,7 +1073,7 @@ class ThreeTierAggrStore : public FlatAggrStore<T, Data...> {
         do {
           
           fut = limit_outstanding_futures(fut);
-        } while (!fut.is_ready());
+        } while (!fut.ready());
       }
     }
     auto fut_done = flush_outstanding_futures_async();

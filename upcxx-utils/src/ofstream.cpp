@@ -841,7 +841,7 @@ dist_ofstream::~dist_ofstream() {
   if (!is_closed) close();
   assert(is_closed);
   stringstream().swap(ss);
-  DBG_VERBOSE("close_fut=", close_fut.is_ready(), "\n");
+  DBG_VERBOSE("close_fut=", close_fut.ready(), "\n");
 }
 
 void dist_ofstream::close() {
