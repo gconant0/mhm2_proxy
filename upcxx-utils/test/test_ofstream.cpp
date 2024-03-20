@@ -434,7 +434,7 @@ int run_large_test(int argc, char **argv) {
     future<> fut;
     if (i % 2 == 1) {
       fut = f.close_async();
-      assert(!fut.ready());
+      assert(!fut.is_ready());
       fut = fut.then([t3]() { t3->stop(); });
     } else {
       fut = make_future();

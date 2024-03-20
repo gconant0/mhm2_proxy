@@ -124,8 +124,8 @@ future<> binary_tree_steps::get_future() const {
 // up phase is done
 
 bool binary_tree_steps::up_ready() const {
-  return dst_is_partial_left_me.get_future().ready() && scratch_is_partial_right.get_future().ready() &&
-         scratch_is_partial_to_parent.get_future().ready() && sent_partial_to_parent.get_future().ready();
+  return dst_is_partial_left_me.get_future().is_ready() && scratch_is_partial_right.get_future().is_ready() &&
+         scratch_is_partial_to_parent.get_future().is_ready() && sent_partial_to_parent.get_future().is_ready();
 }
 
 future<> binary_tree_steps::get_up_future() const {
@@ -135,8 +135,8 @@ future<> binary_tree_steps::get_up_future() const {
 // down phase is done
 
 bool binary_tree_steps::down_ready() const {
-  return scratch_is_partial_from_parent.get_future().ready() && sent_left_child.get_future().ready() &&
-         sent_right_child.get_future().ready();
+  return scratch_is_partial_from_parent.get_future().is_ready() && sent_left_child.get_future().is_ready() &&
+         sent_right_child.get_future().is_ready();
 }
 
 future<> binary_tree_steps::get_down_future() const {

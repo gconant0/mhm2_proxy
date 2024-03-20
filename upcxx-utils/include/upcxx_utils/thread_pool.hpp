@@ -94,7 +94,7 @@ class ThreadPool {
   template <typename Func, class... Args>
   static upcxx::future<> &enqueue_in_single_pool_serially(upcxx::future<> &serial_fut, Func &&func, Args &&... args) {
     assert(upcxx::master_persona().active_with_caller() && "Called from master persona");
-    DBG_VERBOSE("enqueue_in_single_pool_serially: ", &serial_fut, " ", (serial_fut.ready() ? "ready" : "NOT READY"), "\n");
+    DBG_VERBOSE("enqueue_in_single_pool_serially: ", &serial_fut, " ", (serial_fut.is_ready() ? "ready" : "NOT READY"), "\n");
 
     using return_t = typename std::invoke_result<Func, Args...>::type;
     static_assert(std::is_void<return_t>::value, "void is the required return type for enqueue_in_serial_pool");
@@ -144,7 +144,7 @@ class ThreadPool {
     sh_prom->require_anonymous(1);  // additional requirement to complete
 
     auto task_id = global_task_id()++;
-    auto start_t = 0;
+    auto start_t = 0.0;
     DBG("sh_prom=", sh_prom.get(), " task_id=", task_id, "\n");
 
     auto args_tuple = std::make_tuple(args...);  // *copy* arguments to avoid races in argument references being reused
@@ -155,7 +155,7 @@ class ThreadPool {
           DBG_VERBOSE("Finished sh_prom=", sh_prom.get(), "\n");
           // fulfill only in calling persona
           persona.lpc_ff([task_id, start_t, sh_prom]() {
-            duration_seconds s = 0;
+            duration_seconds s (0.0);
             DBG("Fulfilled sh_prom=", sh_prom.get(), " task_id=", task_id, " in ", s.count(), " s\n");
             sh_prom->fulfill_anonymous(1);
             global_tasks_completed()++;
@@ -184,20 +184,20 @@ class ThreadPool {
     std::shared_ptr<upcxx::promise<>> sh_prom = std::make_shared<upcxx::promise<>>();
 
     auto task_id = global_task_id()++;
-    auto start_t = 0;
+    auto start_t = 0.0;
     DBG("sh_prom=", sh_prom.get(), " task_id=", task_id, "of", global_task_id(), "\n");
 
     auto args_tuple = std::make_tuple(args...);  // *copy* arguments to avoid races in argument references being reused
     auto sh_task =
         std::make_shared<Task>([sh_prom, task_id, start_t, &persona, func{std::move(func)}, args_tuple{std::move(args_tuple)}]() {
-          auto compute_start_t = 0;
-          duration_seconds delay_s = compute_start_t - start_t;
+          auto compute_start_t = 0.0;
+          duration_seconds delay_s (compute_start_t - start_t);
           DBG_VERBOSE("Executing sh_prom=", sh_prom.get(), "\n");
           std::apply(func, args_tuple);
           DBG_VERBOSE("Finished sh_prom=", sh_prom.get(), "\n");
           // fulfill only in calling persona
           persona.lpc_ff([task_id, start_t, compute_start_t, delay_s, sh_prom]() {
-            duration_seconds s = 0 - compute_start_t;
+            duration_seconds s (0.0 - compute_start_t);
             DBG("Fulfilled sh_prom=", sh_prom.get(), " task_id=", task_id, "of", global_task_id(), " in ", delay_s.count(), " delay + ", s.count(), " s\n");
             sh_prom->fulfill_anonymous(1);
             global_tasks_completed()++;

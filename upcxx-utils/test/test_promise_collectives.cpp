@@ -34,7 +34,7 @@ int test_promise_barrier(int argc, char **argv) {
   assert(roundup_log2(17) == 5);
   {
     PromiseBarrier pb;
-    assert(!pb.get_future().ready());
+    assert(!pb.get_future().is_ready());
     pb.fulfill();
     pb.get_future().wait();
   }
@@ -44,10 +44,10 @@ int test_promise_barrier(int argc, char **argv) {
     barrier();
     PromiseBarrier pb1, pb2;
     barrier();
-    assert(!pb1.get_future().ready());
+    assert(!pb1.get_future().is_ready());
     pb1.fulfill();
     barrier();
-    assert(!pb2.get_future().ready());
+    assert(!pb2.get_future().is_ready());
     pb2.fulfill();
     barrier();
     pb1.get_future().wait();
@@ -60,12 +60,12 @@ int test_promise_barrier(int argc, char **argv) {
     barrier();
     PromiseBarrier pb1, pb2;
     barrier();
-    assert(!pb1.get_future().ready());
+    assert(!pb1.get_future().is_ready());
     pb1.fulfill();
     barrier();
     pb1.get_future().wait();
     barrier();
-    assert(!pb2.get_future().ready());
+    assert(!pb2.get_future().is_ready());
     pb2.fulfill();
     barrier();
     pb2.get_future().wait();
@@ -76,10 +76,10 @@ int test_promise_barrier(int argc, char **argv) {
     barrier();
     PromiseBarrier pb1, pb2;
     barrier();
-    assert(!pb1.get_future().ready());
+    assert(!pb1.get_future().is_ready());
     pb1.fulfill();
     barrier();
-    assert(!pb2.get_future().ready());
+    assert(!pb2.get_future().is_ready());
     pb2.fulfill();
     barrier();
     pb2.get_future().wait();
@@ -93,10 +93,10 @@ int test_promise_barrier(int argc, char **argv) {
     barrier();
     PromiseBarrier pb1, pb2;
     barrier();
-    assert(!pb2.get_future().ready());
+    assert(!pb2.get_future().is_ready());
     pb2.fulfill();
     barrier();
-    assert(!pb1.get_future().ready());
+    assert(!pb1.get_future().is_ready());
     pb1.fulfill();
     barrier();
     pb2.get_future().wait();
@@ -109,12 +109,12 @@ int test_promise_barrier(int argc, char **argv) {
     barrier();
     PromiseBarrier pb1, pb2;
     barrier();
-    assert(!pb2.get_future().ready());
+    assert(!pb2.get_future().is_ready());
     pb2.fulfill();
     barrier();
     pb2.get_future().wait();
     barrier();
-    assert(!pb1.get_future().ready());
+    assert(!pb1.get_future().is_ready());
     pb1.fulfill();
     barrier();
     pb1.get_future().wait();
@@ -125,10 +125,10 @@ int test_promise_barrier(int argc, char **argv) {
     barrier();
     PromiseBarrier pb1, pb2;
     barrier();
-    assert(!pb2.get_future().ready());
+    assert(!pb2.get_future().is_ready());
     pb2.fulfill();
     barrier();
-    assert(!pb1.get_future().ready());
+    assert(!pb1.get_future().is_ready());
     pb1.fulfill();
     barrier();
     pb1.get_future().wait();
@@ -147,13 +147,13 @@ int test_promise_barrier(int argc, char **argv) {
     for (int i = 0; i < iterations; i++) {
       fulfill_order[i] = i;
       wait_order[i] = i;
-      assert(!pbs[i].get_future().ready());
+      assert(!pbs[i].get_future().is_ready());
     }
     std::shuffle(fulfill_order.begin(), fulfill_order.end(), g);
     barrier();
     // initiate all
     for (int i = 0; i < iterations; i++) {
-      assert(!pbs[fulfill_order[i]].get_future().ready());
+      assert(!pbs[fulfill_order[i]].get_future().is_ready());
       pbs[fulfill_order[i]].fulfill();
     }
     // wait all
@@ -175,14 +175,14 @@ int test_promise_barrier(int argc, char **argv) {
     for (int i = 0; i < iterations; i++) {
       fulfill_order[i] = i;
       wait_order[i] = i;
-      assert(!pbs[i].get_future().ready());
+      assert(!pbs[i].get_future().is_ready());
     }
     std::shuffle(fulfill_order.begin(), fulfill_order.end(), g);
     std::shuffle(wait_order.begin(), wait_order.end(), g);
     barrier();
     // initiate all
     for (int i = 0; i < iterations; i++) {
-      assert(!pbs[fulfill_order[i]].get_future().ready());
+      assert(!pbs[fulfill_order[i]].get_future().is_ready());
       pbs[fulfill_order[i]].fulfill();
     }
     barrier();
@@ -210,7 +210,7 @@ int test_promise_barrier(int argc, char **argv) {
     barrier();
     // initiate all
     for (int i = 0; i < iterations; i++) {
-      assert(!pbs[fulfill_order[i]].get_future().ready());
+      assert(!pbs[fulfill_order[i]].get_future().is_ready());
       pbs[fulfill_order[i]].fulfill();
     }
     barrier();
@@ -236,7 +236,7 @@ int test_promise_barrier(int argc, char **argv) {
     barrier();
     // initiate all
     for (int i = 0; i < iterations; i++) {
-      assert(!pbs[fulfill_order[i]].get_future().ready());
+      assert(!pbs[fulfill_order[i]].get_future().is_ready());
       pbs[fulfill_order[i]].fulfill();
     }
     barrier();
@@ -261,7 +261,7 @@ int test_promise_barrier(int argc, char **argv) {
     barrier();
     // initiate all
     for (int i = 0; i < iterations; i++) {
-      assert(!pbs[fulfill_order[i]].get_future().ready());
+      assert(!pbs[fulfill_order[i]].get_future().is_ready());
       pbs[fulfill_order[i]].fulfill();
       pbs[wait_order[i]].get_future().wait();
     }
@@ -285,7 +285,7 @@ int test_promise_barrier(int argc, char **argv) {
     // initiate all
     future<> all_fut = make_future();
     for (int i = 0; i < iterations; i++) {
-      assert(!pbs[fulfill_order[i]].get_future().ready());
+      assert(!pbs[fulfill_order[i]].get_future().is_ready());
       pbs[fulfill_order[i]].fulfill();
       auto fut = pbs[wait_order[i]].get_future();
       all_fut = when_all(all_fut, fut);
@@ -310,7 +310,7 @@ int test_promise_barrier(int argc, char **argv) {
     // initiate all
     future<> all_fut = make_future();
     for (int i = 0; i < iterations; i++) {
-      assert(!pbs[fulfill_order[i]].get_future().ready());
+      assert(!pbs[fulfill_order[i]].get_future().is_ready());
       pbs[fulfill_order[i]].fulfill();
       auto fut = pbs[wait_order[i]].get_future();
       all_fut = when_all(all_fut, fut);
