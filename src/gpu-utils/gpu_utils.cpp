@@ -45,8 +45,8 @@
 #include <chrono>
 #include <array>
 #include <iomanip>
-#include <cuda_runtime_api.h>
-#include <cuda.h>
+//#include <hip/hip_runtime_api.h>
+//#include <hip/hip_runtime.h>
 
 #include "gpu_utils.hpp"
 #include "upcxx_utils/colors.h"
@@ -59,8 +59,8 @@ static int _rank_me = -1;
 
 static int get_gpu_device_count() {
   if (!_device_count) {
-    auto res = cudaGetDeviceCount(&_device_count);
-    if (res != cudaSuccess) return 0;
+    auto res = hipGetDeviceCount(&_device_count);
+    if (res != hipSuccess) return 0;
   }
   return _device_count;
 }
@@ -71,27 +71,27 @@ void gpu_utils::set_gpu_device(int rank_me) {
     exit(1);
   }
   int num_devs = get_gpu_device_count();
-  cudaErrchk(cudaSetDevice(rank_me % num_devs));
+  cudaErrchk(hipSetDevice(rank_me % num_devs));
 }
 
 size_t gpu_utils::get_gpu_tot_mem() {
   set_gpu_device(_rank_me);
-  cudaDeviceProp prop;
-  cudaErrchk(cudaGetDeviceProperties(&prop, 0));
+  hipDeviceProp_t prop;
+  cudaErrchk(hipGetDeviceProperties(&prop, 0));
   return prop.totalGlobalMem;
 }
 
 size_t gpu_utils::get_gpu_avail_mem() {
   set_gpu_device(_rank_me);
   size_t free_mem, tot_mem;
-  cudaErrchk(cudaMemGetInfo(&free_mem, &tot_mem));
+  cudaErrchk(hipMemGetInfo(&free_mem, &tot_mem));
   return free_mem;
 }
 
 string gpu_utils::get_gpu_device_name() {
   set_gpu_device(_rank_me);
-  cudaDeviceProp prop;
-  cudaErrchk(cudaGetDeviceProperties(&prop, 0));
+  hipDeviceProp_t prop;
+  cudaErrchk(hipGetDeviceProperties(&prop, 0));
   return prop.name;
 }
 
@@ -107,8 +107,8 @@ vector<string> gpu_utils::get_gpu_uuids() {
   vector<string> uuids;
   int num_devs = get_gpu_device_count();
   for (int i = 0; i < num_devs; ++i) {
-    cudaDeviceProp prop;
-    cudaErrchk(cudaGetDeviceProperties(&prop, i));
+    hipDeviceProp_t prop;
+    cudaErrchk(hipGetDeviceProperties(&prop, i));
 #if (CUDA_VERSION >= 10000)
     uuids.push_back(get_uuid_str(prop.uuid.bytes));
 #else
@@ -136,18 +136,18 @@ void gpu_utils::initialize_gpu(double& time_to_initialize, int rank_me) {
   if (!gpus_present()) return;
   _rank_me = rank_me;
   set_gpu_device(_rank_me);
-  cudaErrchk(cudaDeviceReset());
+  cudaErrchk(hipDeviceReset());
   elapsed = chrono::high_resolution_clock::now() - t;
   time_to_initialize = elapsed.count();
 }
 
 string gpu_utils::get_gpu_device_descriptions() {
-  cudaDeviceProp prop;
+  hipDeviceProp_t prop;
   int num_devs = get_gpu_device_count();
   ostringstream os;
   os << "Number of GPU devices visible: " << num_devs << "\n";
   for (int i = 0; i < num_devs; ++i) {
-    cudaErrchk(cudaGetDeviceProperties(&prop, i));
+    cudaErrchk(hipGetDeviceProperties(&prop, i));
 
     os << "GPU Device number: " << i << "\n";
     os << "  Device name: " << prop.name << "\n";
