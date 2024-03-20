@@ -159,7 +159,7 @@ if(ENABLE_HIP)
   set(CMAKE_HIP_PTX_COMPILATION ON)
 
   set(CMAKE_HIP_FLAGS
-      "${CMAKE_HIP_FLAGS} ${ARCH_FLAGS} -Wno-deprecated-gpu-targets"
+      "${CMAKE_HIP_FLAGS} ${ARCH_FLAGS} -Wno-deprecated-gpu-targets -fgpu-rdc --hip-link"
   )
 
   message(STATUS "CMAKE_HIP_FLAGS=${CMAKE_HIP_FLAGS}")
