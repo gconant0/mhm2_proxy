@@ -85,23 +85,23 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 include(CheckLanguage)
-check_language(CUDA)
-if(CMAKE_CUDA_COMPILER)
-  option(ENABLE_CUDA "Enable CUDA" ON)
-  if(ENABLE_CUDA)
-    set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
-    set(CMAKE_CUDA_RESOLVE_DEVICE_SYMBOLS OFF) # only build device link objects
+check_language(HIP)
+if(CMAKE_HIP_COMPILER)
+  option(ENABLE_HIP "Enable HIP" ON)
+  if(ENABLE_HIP)
+    set(CMAKE_HIP_SEPARABLE_COMPILATION ON)
+    set(CMAKE_HIP_RESOLVE_DEVICE_SYMBOLS OFF) # only build device link objects
                                                # for GPU targets
-    enable_language(CUDA)
+    enable_language(HIP)
   endif()
 else()
-  message(STATUS "No CUDA environment detected")
-  set(ENABLE_CUDA
+  message(STATUS "No HIP environment detected")
+  set(ENABLE_HIP
       OFF
-      CACHE BOOL "Enable CUDA" FORCE)
+      CACHE BOOL "Enable HIP" FORCE)
 endif()
-if(ENABLE_CUDA)
-  message(STATUS "Building for GPU with CUDA")
+if(ENABLE_HIP)
+  message(STATUS "Building for GPU with HIP")
 else()
   message(STATUS "Building for CPU only")
 endif()

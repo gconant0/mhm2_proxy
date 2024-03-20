@@ -11,7 +11,7 @@ add_subdirectory(googletest)
 
 if(ENABLE_CUDA)
   add_definitions(-DENABLE_GPUS)
-  message(STATUS "Building tests for GPUs with CUDA")
+  message(STATUS "Building tests for GPUs with HIP")
 endif()
 
 set(BINARY mhm2_test)
